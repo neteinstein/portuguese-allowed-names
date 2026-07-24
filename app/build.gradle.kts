@@ -18,7 +18,7 @@ android {
         // versionCode that's always higher than the last - required for Android to treat it
         // as an upgrade. Local/dev builds that don't pass that property fall back to 1.
         versionCode = (project.findProperty("versionCode") as String?)?.toIntOrNull() ?: 1
-        versionName = "2.2.5"
+        versionName = "2.2.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
