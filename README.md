@@ -48,6 +48,13 @@ di/             Koin modules wiring the above together
 ./gradlew lintDebug         # run Android Lint
 ```
 
+## AI agent roles
+
+Developer, QA, Architect, and Security Manager agent definitions for both Claude Code
+(`.claude/agents/`) and GitHub Copilot (`.github/agents/`) live in this repo — see
+[.github/AGENT_ORCHESTRATION.md](.github/AGENT_ORCHESTRATION.md) for how delegation and
+triggering work on each platform.
+
 ## Privacy
 
 The app does not collect any personal data — see [PRIVACY_POLICY.md](PRIVACY_POLICY.md) for
