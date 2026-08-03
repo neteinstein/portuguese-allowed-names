@@ -30,16 +30,18 @@ GitHub event) — the entry point is always a Claude Code session, interactive o
 
 ## GitHub Copilot
 
-Copilot's custom agents (`.github/agents/*.agent.md`) are picked up by **both**:
+Copilot's custom agents (`.github/agents/*.agent.md`) are picked up in **three** places:
 
-1. **Copilot CLI / VS Code chat**, where the runtime intent-matches your prompt against each
-   agent's `description` and delegates to it as a sub-agent in an isolated context, streaming
-   results back to the parent session — the same automatic-delegation model as Claude Code's
-   subagents, just running in a different product.
-2. **The Copilot coding agent** (the cloud agent that opens PRs on its own), which reads
+1. **Copilot CLI**, which infers the right agent from your prompt against each agent's
+   `description` (same idea as Claude Code's auto-delegation — "I want a security-focused
+   review" routes to `security-manager`), or you invoke one explicitly with `/agent`, by asking
+   for it by name, or with `copilot --agent <name>`.
+2. **VS Code / JetBrains / Eclipse / Xcode chat**, same profile files, agent picker in the chat UI.
+3. **The Copilot coding agent** (the cloud agent that opens PRs on its own), which reads
    `.github/agents/` from the repository as "how we do things here" context for asynchronous
-   work. This is where Copilot's *reactive triggering* actually lives — the coding agent starts
-   a session on its own when:
+   work, available from the agents tab, an issue assignment, or a PR review request. This is
+   where Copilot's *reactive triggering* actually lives — the coding agent starts a session on
+   its own when:
    - an issue is assigned to Copilot (`@copilot`, or the "assign Copilot" UI/API),
    - a review is requested from Copilot on a PR,
    - or a workflow explicitly hands off a task to it (e.g. via `/delegate` in Copilot CLI, or a
@@ -51,8 +53,17 @@ Copilot's custom agents (`.github/agents/*.agent.md`) are picked up by **both**:
    auto-assign it to Copilot with the Security Manager persona" would be a further, separate
    step (a GitHub Actions workflow), not something the agent files alone provide.
 
-`target: vscode` / `target: github-copilot` can restrict an agent to one surface; these four
-are left unrestricted so they're available in both.
+Two other frontmatter fields are worth knowing about even though these four agents don't set
+them: `disable-model-invocation: true` opts an agent out of automatic selection (explicit
+invocation only), and `user-invocable: false` hides it from manual pickers (automatic-only,
+e.g. an internal helper agent). `target: vscode` / `target: github-copilot` restricts an agent
+to one surface; these four are left unrestricted so they're available everywhere.
+
+There's a separate, SDK-level "custom agents" concept (`CopilotClient.createSession()` with a
+programmatic `customAgents` option, for apps built on the Copilot SDK) that also does
+description-based delegation into an isolated sub-agent session. That's a different mechanism
+from the `.github/agents/*.agent.md` repository profiles this repo uses — relevant only if
+someone builds a Copilot SDK app against this repo, not to CLI/VS Code/cloud agent usage.
 
 ## Why four separate roles instead of one generic agent
 
