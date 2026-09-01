@@ -3,6 +3,8 @@ package org.neteinstein.pickaname.presentation.namelist
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
@@ -16,6 +18,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -95,6 +98,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
@@ -131,6 +135,8 @@ fun NameListScreen(
     val listState = rememberLazyListState()
     var showRulesSheet by remember { mutableStateOf(false) }
     var randomlyPickedName by remember { mutableStateOf<NameEntry?>(null) }
+    var nameMeaningSearch by remember { mutableStateOf<NameEntry?>(null) }
+    val context = LocalContext.current
 
     // The fast scroller only makes sense over the full alphabetical list: with a single
     // initial selected there's only ever one letter on screen, so jumping between letters
@@ -154,6 +160,12 @@ fun NameListScreen(
 
     randomlyPickedName?.let { entry ->
         RandomNameDialog(entry = entry, onDismiss = { randomlyPickedName = null })
+    }
+
+    nameMeaningSearch?.let { entry ->
+        ModalBottomSheet(onDismissRequest = { nameMeaningSearch = null }) {
+            NameMeaningBottomSheetContent(entry = entry)
+        }
     }
 
     Scaffold(
@@ -263,7 +275,17 @@ fun NameListScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(uiState.names, key = { it.id }) { entry ->
-                                NameRow(entry, modifier = Modifier.animateItem())
+                                NameRow(
+                                    entry = entry,
+                                    modifier = Modifier.animateItem(),
+                                    onLongPress = {
+                                        if (canLoadWebView(context)) {
+                                            nameMeaningSearch = entry
+                                        } else {
+                                            openUrl(context, buildMeaningSearchUrl(context, entry))
+                                        }
+                                    }
+                                )
                             }
                         }
 
@@ -421,6 +443,57 @@ private fun openUrl(context: Context, url: String) {
         context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
     } catch (e: ActivityNotFoundException) {
         // No browser available on this device - nothing else we can do here.
+    }
+}
+
+/** A Google search for what [entry]'s name means, phrased in the app's current language. */
+private fun buildMeaningSearchUrl(context: Context, entry: NameEntry): String {
+    val queryText = context.getString(R.string.name_meaning_search_query, entry.name)
+    return "https://www.google.com".toUri().buildUpon()
+        .appendEncodedPath("search")
+        .appendQueryParameter("q", queryText)
+        .build()
+        .toString()
+}
+
+/**
+ * Whether this device can actually host a [WebView]. Some OEM/enterprise-restricted devices ship
+ * without a working WebView provider, which throws when instantiated - in that case the in-app
+ * bottom sheet isn't an option and callers should fall back to [openUrl] instead.
+ */
+private fun canLoadWebView(context: Context): Boolean =
+    try {
+        WebView(context)
+        true
+    } catch (e: Throwable) {
+        false
+    }
+
+/** Bottom sheet content: a Google search for [entry]'s meaning, rendered in an embedded WebView. */
+@Composable
+private fun NameMeaningBottomSheetContent(entry: NameEntry) {
+    val context = LocalContext.current
+    val searchUrl = remember(entry) { buildMeaningSearchUrl(context, entry) }
+
+    Column(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f)) {
+        Text(
+            text = entry.name,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
+        )
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { ctx ->
+                WebView(ctx).apply {
+                    settings.javaScriptEnabled = true
+                    // Keeps taps on search results loading inside this WebView instead of
+                    // spawning external intents, so exploring results stays in the sheet.
+                    webViewClient = WebViewClient()
+                    loadUrl(searchUrl)
+                }
+            }
+        )
     }
 }
 
@@ -708,9 +781,10 @@ private fun LetterFastScroller(
 }
 
 @Composable
-private fun NameRow(entry: NameEntry, modifier: Modifier = Modifier) {
+private fun NameRow(entry: NameEntry, onLongPress: () -> Unit, modifier: Modifier = Modifier) {
     val extendedColors = PickANameTheme.extendedColors
     val (avatarContainer, avatarContent) = genderAvatarColors(entry.gender, extendedColors)
+    val haptics = LocalHapticFeedback.current
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -721,6 +795,13 @@ private fun NameRow(entry: NameEntry, modifier: Modifier = Modifier) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .combinedClickable(
+                    onClick = {},
+                    onLongClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onLongPress()
+                    }
+                )
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
