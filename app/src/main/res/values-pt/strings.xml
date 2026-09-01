@@ -38,6 +38,7 @@
     <string name="name_rules_footer">Nos casos invulgares ou de fronteira, a resposta definitiva cabe sempre ao registo civil / IRN.</string>
     <string name="cd_settings_icon">Definições</string>
     <string name="cd_name_rules_icon">Regras dos nomes</string>
+    <string name="cd_random_name_icon">Escolher um nome aleatório</string>
     <string name="cd_clear_search">Limpar pesquisa</string>
     <string name="cd_letter_fast_scroller">Arraste para saltar para uma letra</string>
 

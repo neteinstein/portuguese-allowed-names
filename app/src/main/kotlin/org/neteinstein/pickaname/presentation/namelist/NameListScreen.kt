@@ -5,13 +5,20 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +45,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Female
 import androidx.compose.material.icons.filled.Male
@@ -70,6 +78,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -86,6 +95,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
@@ -95,7 +106,11 @@ import org.neteinstein.pickaname.domain.model.NameEntry
 import org.neteinstein.pickaname.presentation.common.GenderTag
 import org.neteinstein.pickaname.presentation.theme.PickANameExtendedColors
 import org.neteinstein.pickaname.presentation.theme.PickANameTheme
+import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.roundToInt
+import kotlin.math.sin
+import kotlin.random.Random
 
 /**
  * Main screen: the full names list with gender/initial filters and a live match count. Reachable
@@ -115,6 +130,7 @@ fun NameListScreen(
     val autoRefreshFailedMessage = stringResource(R.string.name_list_auto_refresh_failed)
     val listState = rememberLazyListState()
     var showRulesSheet by remember { mutableStateOf(false) }
+    var randomlyPickedName by remember { mutableStateOf<NameEntry?>(null) }
 
     // The fast scroller only makes sense over the full alphabetical list: with a single
     // initial selected there's only ever one letter on screen, so jumping between letters
@@ -136,6 +152,10 @@ fun NameListScreen(
         }
     }
 
+    randomlyPickedName?.let { entry ->
+        RandomNameDialog(entry = entry, onDismiss = { randomlyPickedName = null })
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -147,6 +167,15 @@ fun NameListScreen(
                     )
                 },
                 actions = {
+                    IconButton(
+                        onClick = { randomlyPickedName = uiState.names.random() },
+                        enabled = uiState.names.isNotEmpty()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Casino,
+                            contentDescription = stringResource(R.string.cd_random_name_icon)
+                        )
+                    }
                     IconButton(onClick = { showRulesSheet = true }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.HelpOutline,
@@ -726,4 +755,160 @@ private fun genderAvatarColors(
 ): Pair<Color, Color> = when (gender) {
     Gender.FEMALE -> extendedColors.femaleContainer to extendedColors.onFemaleContainer
     Gender.MALE -> extendedColors.maleContainer to extendedColors.onMaleContainer
+}
+
+/**
+ * Full-screen overlay showing the dice's pick, celebrated with looping firework bursts behind
+ * it. Backed by [Dialog] so the system back button dismisses it for free; tapping the scrim
+ * (anywhere outside the card) dismisses it too, while a tap on the card itself is consumed so it
+ * doesn't propagate to the scrim underneath it.
+ */
+@Composable
+private fun RandomNameDialog(entry: NameEntry, onDismiss: () -> Unit) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.6f))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onDismiss
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            FireworksOverlay(modifier = Modifier.fillMaxSize())
+            RandomNameCard(entry = entry)
+        }
+    }
+}
+
+@Composable
+private fun RandomNameCard(entry: NameEntry) {
+    val extendedColors = PickANameTheme.extendedColors
+    val (avatarContainer, avatarContent) = genderAvatarColors(entry.gender, extendedColors)
+
+    Card(
+        // Consumes its own taps so tapping the card doesn't fall through to the scrim behind it.
+        modifier = Modifier.clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null,
+            onClick = {}
+        ),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .background(avatarContainer, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = entry.name.take(1).uppercase(),
+                    color = avatarContent,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.headlineMedium
+                )
+            }
+            Text(
+                text = entry.name,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+            GenderTag(gender = entry.gender)
+        }
+    }
+}
+
+private data class FireworkParticle(val angle: Float, val color: Color)
+
+private data class FireworkBurst(
+    val center: Offset,
+    val phaseOffset: Float,
+    val particles: List<FireworkParticle>
+)
+
+private val FIREWORK_COLORS = listOf(
+    Color(0xFFFFC107),
+    Color(0xFFFF5252),
+    Color(0xFF69F0AE),
+    Color(0xFF40C4FF),
+    Color(0xFFE040FB)
+)
+
+/** Relative (0..1 of width/height) positions for each firework burst, staggered around the card. */
+private val FIREWORK_BURST_CENTERS = listOf(
+    Offset(0.18f, 0.22f),
+    Offset(0.82f, 0.18f),
+    Offset(0.14f, 0.78f),
+    Offset(0.86f, 0.8f),
+    Offset(0.5f, 0.1f)
+)
+
+private const val FIREWORK_PARTICLES_PER_BURST = 16
+private const val FIREWORK_LOOP_MILLIS = 1400
+
+/**
+ * Looping firework bursts radiating outward from a handful of points around the screen. Each
+ * burst is offset in time ([FireworkBurst.phaseOffset]) so they don't all pop at once, then fade
+ * back in once their cycle wraps - giving a continuous celebration for as long as the dialog
+ * stays open.
+ */
+@Composable
+private fun FireworksOverlay(modifier: Modifier = Modifier) {
+    val bursts = remember {
+        FIREWORK_BURST_CENTERS.mapIndexed { index, center ->
+            FireworkBurst(
+                center = center,
+                phaseOffset = index / FIREWORK_BURST_CENTERS.size.toFloat(),
+                particles = List(FIREWORK_PARTICLES_PER_BURST) {
+                    FireworkParticle(
+                        angle = Random.nextFloat() * (2 * PI).toFloat(),
+                        color = FIREWORK_COLORS.random()
+                    )
+                }
+            )
+        }
+    }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "fireworks")
+    val time by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(animation = tween(FIREWORK_LOOP_MILLIS, easing = LinearEasing)),
+        label = "fireworksTime"
+    )
+
+    Canvas(modifier = modifier) {
+        val maxRadius = size.minDimension * 0.22f
+        bursts.forEach { burst ->
+            val progress = (time + burst.phaseOffset) % 1f
+            val alpha = if (progress < 0.15f) progress / 0.15f else (1f - progress).coerceIn(0f, 1f)
+            if (alpha <= 0f) return@forEach
+            val burstCenter = Offset(burst.center.x * size.width, burst.center.y * size.height)
+            val distance = maxRadius * progress
+            burst.particles.forEach { particle ->
+                val point = burstCenter + Offset(
+                    x = cos(particle.angle) * distance,
+                    y = sin(particle.angle) * distance
+                )
+                drawCircle(
+                    color = particle.color.copy(alpha = alpha),
+                    radius = 3.dp.toPx() * (1f - progress * 0.5f),
+                    center = point
+                )
+            }
+        }
+    }
 }
