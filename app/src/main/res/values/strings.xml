@@ -38,6 +38,7 @@
     <string name="name_rules_footer">For unusual or borderline cases, the final answer always comes from the Portuguese civil registry / IRN.</string>
     <string name="cd_settings_icon">Settings</string>
     <string name="cd_name_rules_icon">Name rules</string>
+    <string name="cd_random_name_icon">Pick a random name</string>
     <string name="cd_clear_search">Clear search</string>
     <string name="cd_letter_fast_scroller">Drag to jump to a letter</string>
 
