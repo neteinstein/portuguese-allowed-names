@@ -269,7 +269,23 @@ jobs:
             --title "Release v$VERSION_NAME" \
             --notes "$RELEASE_NOTES"
 
+      # Whether an edit's commit is even allowed to pass `changesNotSentForReview` - and which
+      # value it requires - depends on this Play Console account's "Managed publishing" setting
+      # (Play Console > Setup > Advanced settings), which isn't readable through the Play
+      # Developer API and has flipped between the two states on this account over time:
+      #   - Managed publishing ON:  commit requires changesNotSentForReview: true, else it fails
+      #     with "Changes cannot be sent for review automatically. Please set the query
+      #     parameter changesNotSentForReview to true."
+      #   - Managed publishing OFF: commit rejects that same flag with "Changes are sent for
+      #     review automatically. The query parameter changesNotSentForReview must not be set."
+      # Rather than hardcoding one value and needing a workflow edit every time that account
+      # setting flips, try both: the first attempt uses `true` (continue-on-error, so a rejection
+      # here doesn't fail the job), and the second - which only runs if the first didn't already
+      # succeed - omits it entirely. Exactly one of the two matches whatever the account is
+      # currently set to; only a real failure (bad credentials, quota, ...) fails both and the job.
       - name: Upload to Google Play (Internal Track)
+        id: play_upload_managed
+        continue-on-error: true
         uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_JSON_KEY }}
@@ -277,15 +293,18 @@ jobs:
           releaseFiles: app/build/outputs/bundle/release/app-release.aab
           tracks: internal
           status: completed
-          # This Play Console account has managed publishing (or an equivalent review
-          # requirement) turned on, so the API refuses to auto-submit an edit for review and
-          # fails the commit with "Changes cannot be sent for review automatically. Please set
-          # the query parameter changesNotSentForReview to true.". Setting this to true commits
-          # the upload successfully; a maintainer still needs to open Play Console afterwards
-          # and hit "Send for review" (or "Publish") to make the build live on the internal
-          # track - see CI_CD_SETUP.md.
           changesNotSentForReview: true
           # No whatsNewDirectory here: distribution/whatsnew was deliberately deleted (no
           # per-locale release notes are maintained), and pointing at a missing directory
           # makes this action fail with ENOENT. The Play Store release still gets the
           # GitHub release notes generated above.
+
+      - name: Upload to Google Play (Internal Track) - retry for managed publishing off
+        if: steps.play_upload_managed.outcome == 'failure'
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_JSON_KEY }}
+          packageName: org.neteinstein.pickaname
+          releaseFiles: app/build/outputs/bundle/release/app-release.aab
+          tracks: internal
+          status: completed
