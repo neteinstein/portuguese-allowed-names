@@ -50,12 +50,19 @@ merging does not trigger a release, and neither does a direct push that bypasses
 - **Upload to Play Store**: uploads the signed AAB to the Play Store **internal** testing track
   (`tracks: internal`) via `PLAY_STORE_JSON_KEY`. It does not touch `production` or any other
   track — promoting a build beyond internal testing is still a manual step in Play Console.
-  Passes `changesNotSentForReview: true`, because this Play Console account requires changes to
-  be sent for review manually rather than automatically on commit — without that flag the step
-  fails with `Changes cannot be sent for review automatically. Please set the query parameter
-  changesNotSentForReview to true.`. **This means every release still needs one manual step
-  after CI finishes**: open Play Console → Internal testing → and click "Send \[N\] changes for
-  review" (or "Publish") before the new build actually reaches testers.
+  Whether the upload's commit needs `changesNotSentForReview: true`, needs it omitted, or
+  rejects either depends on this Play Console account's "Managed publishing" setting (Play
+  Console → Setup → Advanced settings), which isn't readable via the Play Developer API and has
+  flipped on this account before (with `true`: `Changes cannot be sent for review automatically.
+  Please set the query parameter changesNotSentForReview to true.`; without it: `Changes are
+  sent for review automatically. The query parameter changesNotSentForReview must not be set.`).
+  Rather than hardcoding a value that breaks every time that setting flips, the workflow tries
+  `changesNotSentForReview: true` first and, only if that attempt fails, retries the same upload
+  without it — so the release survives either state without a workflow edit. **If Managed
+  publishing is on, every release still needs one manual step after CI finishes**: open Play
+  Console → Internal testing → and click "Send \[N\] changes for review" (or "Publish") before
+  the new build actually reaches testers; if it's off, the build goes live on the internal track
+  as soon as CI finishes.
 
 ### Gradle cache
 
