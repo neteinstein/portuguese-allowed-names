@@ -134,6 +134,7 @@ fun NameListScreen(
     val autoRefreshFailedMessage = stringResource(R.string.name_list_auto_refresh_failed)
     val listState = rememberLazyListState()
     var showRulesSheet by remember { mutableStateOf(false) }
+    var showTraditionalNamesInfoSheet by remember { mutableStateOf(false) }
     var randomlyPickedName by remember { mutableStateOf<NameEntry?>(null) }
     var nameMeaningSearch by remember { mutableStateOf<NameEntry?>(null) }
     val context = LocalContext.current
@@ -155,6 +156,12 @@ fun NameListScreen(
     if (showRulesSheet) {
         ModalBottomSheet(onDismissRequest = { showRulesSheet = false }) {
             RulesBottomSheetContent()
+        }
+    }
+
+    if (showTraditionalNamesInfoSheet) {
+        ModalBottomSheet(onDismissRequest = { showTraditionalNamesInfoSheet = false }) {
+            TraditionalNamesInfoBottomSheetContent()
         }
     }
 
@@ -224,6 +231,20 @@ fun NameListScreen(
             GenderFilterRow(
                 selected = uiState.selectedGender,
                 onSelected = viewModel::onGenderSelected
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = stringResource(R.string.filter_section_other),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            OtherFiltersRow(
+                traditionalOnly = uiState.traditionalOnly,
+                onTraditionalOnlyChanged = viewModel::onTraditionalOnlyChanged,
+                onTraditionalNamesInfoClick = { showTraditionalNamesInfoSheet = true }
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -437,6 +458,34 @@ private fun OfficialResourceLinkRow(link: OfficialResourceLink, onClick: () -> U
     }
 }
 
+@Composable
+private fun TraditionalNamesInfoBottomSheetContent() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.traditional_names_info_title),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            text = stringResource(R.string.traditional_names_info_intro),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        RulesDisclaimerCard(text = stringResource(R.string.traditional_names_info_disclaimer))
+        Text(
+            text = stringResource(R.string.traditional_names_info_rules),
+            style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
 /** Opens [url] in an external browser; silently no-ops if no app can handle it. */
 private fun openUrl(context: Context, url: String) {
     try {
@@ -617,6 +666,35 @@ private fun GenderFilterChip(
             selectedLeadingIconColor = contentColor
         )
     )
+}
+
+@Composable
+private fun OtherFiltersRow(
+    traditionalOnly: Boolean,
+    onTraditionalOnlyChanged: (Boolean) -> Unit,
+    onTraditionalNamesInfoClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(0.dp)
+    ) {
+        FilterChip(
+            selected = traditionalOnly,
+            onClick = { onTraditionalOnlyChanged(!traditionalOnly) },
+            label = { Text(stringResource(R.string.filter_traditional_names)) },
+            modifier = Modifier.padding(start = 8.dp)
+        )
+        IconButton(onClick = onTraditionalNamesInfoClick) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.HelpOutline,
+                contentDescription = stringResource(R.string.cd_traditional_names_info_icon),
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
 }
 
 @Composable

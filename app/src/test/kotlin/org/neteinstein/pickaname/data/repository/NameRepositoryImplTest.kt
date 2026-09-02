@@ -20,6 +20,8 @@ class NameRepositoryImplTest {
 
     private val aliceEntity = NameEntity(id = 1, name = "Alice", gender = "F", initialLetter = "A")
     private val aliceEntry = NameEntry(id = 1, name = "Alice", gender = Gender.FEMALE)
+    private val kevinEntity = NameEntity(id = 2, name = "Kevin", gender = "M", initialLetter = "K")
+    private val kevinEntry = NameEntry(id = 2, name = "Kevin", gender = Gender.MALE)
 
     @Test
     fun `observeNames passes an unrestricted filter through as all-null dao params`() = runTest {
@@ -63,6 +65,39 @@ class NameRepositoryImplTest {
 
         repository.observeNames(NameFilter(query = "   ")).test {
             assertThat(awaitItem()).isEmpty()
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun `observeNames excludes non-traditional names when traditionalOnly is enabled`() = runTest {
+        every { nameDao.observeNames(gender = null, initial = null, query = null) } returns
+            flowOf(listOf(aliceEntity, kevinEntity))
+
+        repository.observeNames(NameFilter(traditionalOnly = true)).test {
+            assertThat(awaitItem()).containsExactly(aliceEntry)
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun `observeNames keeps all names when traditionalOnly is disabled`() = runTest {
+        every { nameDao.observeNames(gender = null, initial = null, query = null) } returns
+            flowOf(listOf(aliceEntity, kevinEntity))
+
+        repository.observeNames(NameFilter(traditionalOnly = false)).test {
+            assertThat(awaitItem()).containsExactly(aliceEntry, kevinEntry)
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun `observeNameCount derives its count from the traditional-only filtered list`() = runTest {
+        every { nameDao.observeNames(gender = null, initial = null, query = null) } returns
+            flowOf(listOf(aliceEntity, kevinEntity))
+
+        repository.observeNameCount(NameFilter(traditionalOnly = true)).test {
+            assertThat(awaitItem()).isEqualTo(1)
             awaitComplete()
         }
     }

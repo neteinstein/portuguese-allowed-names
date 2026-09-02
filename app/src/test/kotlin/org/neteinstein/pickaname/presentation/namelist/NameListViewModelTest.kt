@@ -17,6 +17,7 @@ import org.neteinstein.pickaname.domain.model.Gender
 import org.neteinstein.pickaname.domain.model.NameEntry
 import org.neteinstein.pickaname.domain.model.NameFilter
 import org.neteinstein.pickaname.domain.model.SyncFailureReason
+import org.neteinstein.pickaname.domain.model.TraditionalNameRules
 import org.neteinstein.pickaname.domain.usecase.ObserveNameCountUseCase
 import org.neteinstein.pickaname.domain.usecase.ObserveNamesUseCase
 import org.neteinstein.pickaname.domain.usecase.RefreshNamesIfDueUseCase
@@ -37,25 +38,27 @@ class NameListViewModelTest {
 
     private val alice = NameEntry(1, "Alice", Gender.FEMALE)
     private val bob = NameEntry(2, "Bob", Gender.MALE)
+    private val kevin = NameEntry(3, "Kevin", Gender.MALE)
     private val allNames = listOf(alice, bob)
 
     private fun matches(entry: NameEntry, filter: NameFilter): Boolean =
         (filter.gender == null || entry.gender == filter.gender) &&
             (filter.initial == null || entry.name.first().uppercaseChar() == filter.initial) &&
-            (filter.query.isBlank() || entry.name.contains(filter.query, ignoreCase = true))
+            (filter.query.isBlank() || entry.name.contains(filter.query, ignoreCase = true)) &&
+            (!filter.traditionalOnly || TraditionalNameRules.isTraditional(entry.name))
 
     private val observeNamesUseCase: ObserveNamesUseCase = mockk()
     private val observeNameCountUseCase: ObserveNameCountUseCase = mockk()
     private val refreshNamesIfDueUseCase: RefreshNamesIfDueUseCase = mockk()
 
-    private fun createViewModel(): NameListViewModel {
+    private fun createViewModel(names: List<NameEntry> = allNames): NameListViewModel {
         every { observeNamesUseCase(any()) } answers {
             val filter = firstArg<NameFilter>()
-            flowOf(allNames.filter { matches(it, filter) })
+            flowOf(names.filter { matches(it, filter) })
         }
         every { observeNameCountUseCase(any()) } answers {
             val filter = firstArg<NameFilter>()
-            flowOf(allNames.count { matches(it, filter) })
+            flowOf(names.count { matches(it, filter) })
         }
         coEvery { refreshNamesIfDueUseCase() } returns AutoRefreshResult.NotDue
         return NameListViewModel(observeNamesUseCase, observeNameCountUseCase, refreshNamesIfDueUseCase)
@@ -111,6 +114,25 @@ class NameListViewModelTest {
             val state = awaitItem()
             assertThat(state.names).containsExactly(bob)
             assertThat(state.selectedInitial).isEqualTo('B')
+        }
+    }
+
+    @Test
+    fun `enabling traditionalOnly excludes names that fail the traditional-names heuristic`() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = createViewModel(names = listOf(alice, bob, kevin))
+
+        viewModel.uiState.test {
+            awaitItem() // static default
+            runCurrent()
+            awaitItem() // real unfiltered first result
+
+            viewModel.onTraditionalOnlyChanged(true)
+            runCurrent()
+
+            val state = awaitItem()
+            assertThat(state.names).containsExactly(alice, bob)
+            assertThat(state.count).isEqualTo(2)
+            assertThat(state.traditionalOnly).isTrue()
         }
     }
 

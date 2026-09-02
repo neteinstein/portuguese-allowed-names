@@ -20,8 +20,10 @@
     <string name="name_list_search_hint">Search names</string>
     <string name="filter_section_gender">Gender</string>
     <string name="filter_section_initial">Initial</string>
+    <string name="filter_section_other">Other Filters</string>
     <string name="filter_gender_all">All</string>
     <string name="filter_initial_all">All</string>
+    <string name="filter_traditional_names">Traditional names</string>
     <string name="gender_female">Female</string>
     <string name="gender_male">Male</string>
     <string name="name_list_empty_state">No names match your filters.</string>
@@ -36,8 +38,13 @@
     <string name="name_rules_link_register_birth_title">How to register a birth</string>
     <string name="name_rules_link_register_birth_description">Official Government guide on registering a newborn\'s birth in Portugal.</string>
     <string name="name_rules_footer">For unusual or borderline cases, the final answer always comes from the Portuguese civil registry / IRN.</string>
+    <string name="traditional_names_info_title">Traditional Portuguese names</string>
+    <string name="traditional_names_info_intro">The IRN (Portugal\'s civil registry authority) doesn\'t publish any list or flag identifying which names are considered \"traditional\" Portuguese names. This filter is only a best-effort approximation, not an official classification.</string>
+    <string name="traditional_names_info_disclaimer">Treat this filter as a rough guide, not a definitive answer. Some traditional names may be hidden, and some hidden names may still be traditional.</string>
+    <string name="traditional_names_info_rules">As a best effort, a name is hidden when it contains the letters K, Y or W, or a doubled consonant (like \"nn\" or \"ll\") — patterns that are rare or foreign to older Portuguese spelling.</string>
     <string name="cd_settings_icon">Settings</string>
     <string name="cd_name_rules_icon">Name rules</string>
+    <string name="cd_traditional_names_info_icon">About the traditional names filter</string>
     <string name="cd_random_name_icon">Pick a random name</string>
     <string name="cd_clear_search">Clear search</string>
     <string name="cd_letter_fast_scroller">Drag to jump to a letter</string>
