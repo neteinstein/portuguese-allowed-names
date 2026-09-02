@@ -130,8 +130,8 @@ class NameListViewModelTest {
             runCurrent()
 
             val state = awaitItem()
-            assertThat(state.names).containsExactly(alice, bob)
-            assertThat(state.count).isEqualTo(2)
+            assertThat(state.names).containsExactly(alice)
+            assertThat(state.count).isEqualTo(1)
             assertThat(state.traditionalOnly).isTrue()
         }
     }
