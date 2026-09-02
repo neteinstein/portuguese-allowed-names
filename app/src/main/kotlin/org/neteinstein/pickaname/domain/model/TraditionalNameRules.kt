@@ -10,17 +10,30 @@ package org.neteinstein.pickaname.domain.model
  *    exhaustive - most of the several thousand IRN-approved names aren't on it - so missing from
  *    it falls through to the spelling heuristic below rather than being treated as "not
  *    traditional".
- * 2. A spelling heuristic for everything else: a name is excluded if it uses the letters K, Y or
- *    W, the digraphs "ph"/"th" (Portuguese always spells those sounds "f"/"t"), or a doubled
- *    consonant - except "rr" and "ss", which are native Portuguese digraphs with their own
- *    pronunciation (e.g. "carro", "passo"), not a foreign-spelling artifact like "nn" or "ll".
+ * 2. A Portuguese orthography/phonotactics heuristic for everything else. A name is excluded if
+ *    it:
+ *    - uses the letters K, Y or W;
+ *    - uses the digraphs "ph"/"th"/"sh"/"tz" (Portuguese spells those sounds "f", "t" and "ch"
+ *      natively, and has no "tz" digraph at all);
+ *    - has a "q" not immediately followed by "u" (Portuguese always spells /k/ before a front
+ *      sound as "qu", e.g. "Joaquim", never a bare "q");
+ *    - starts with "s" immediately followed by a consonant (Portuguese phonotactics require a
+ *      prosthetic vowel before an "s"-cluster: "Estêvão", not "Stêvão");
+ *    - ends in a consonant other than "l", "r", "s", "z", "m" or "n" - the only consonants a
+ *      Portuguese word can end in;
+ *    - doubles any letter - except the native digraphs "rr" and "ss" (e.g. "carro", "passo"),
+ *      which are the only doubled letters Portuguese ever legitimately uses; doubled vowels
+ *      ("aa", "ee") get no such exception. Comparison is by exact character, so an accented vowel
+ *      is never conflated with its plain counterpart (e.g. "ã" next to "a" isn't a repeat).
  */
 object TraditionalNameRules {
 
     private val EXCLUDED_LETTERS = setOf('k', 'y', 'w')
-    private val EXCLUDED_DIGRAPHS = listOf("ph", "th")
+    private val EXCLUDED_DIGRAPHS = listOf("ph", "th", "sh", "tz")
+    private val VOWELS = setOf('a', 'e', 'i', 'o', 'u', 'á', 'à', 'â', 'ã', 'é', 'ê', 'í', 'ó', 'ô', 'õ', 'ú')
     private val CONSONANTS = "bcdfghjlmnpqrstvxz".toSet()
     private val NATIVE_DOUBLED_CONSONANTS = setOf('r', 's')
+    private val VALID_FINAL_CONSONANTS = setOf('l', 'r', 's', 'z', 'm', 'n')
 
     private val CURATED_TRADITIONAL_NAMES: Set<String> = setOf(
         // Male
@@ -31,7 +44,7 @@ object TraditionalNameRules {
         "Cândido", "Carlos", "Casimiro", "Cipriano", "Constantino", "Cosme", "Custódio", "Daniel",
         "David", "Dinis", "Diogo", "Dionísio", "Domingos", "Duarte", "Edmundo", "Eduardo", "Elias",
         "Emídio", "Ernesto", "Estêvão", "Eugénio", "Eurico", "Fausto", "Feliciano", "Felisberto",
-        "Fernando", "Filipe", "Firmino", "Florêncio", "Francisco", "Frederico", "Gabriel",
+        "Félix", "Fernando", "Filipe", "Firmino", "Florêncio", "Francisco", "Frederico", "Gabriel",
         "Gaspar", "Gastão", "Gerardo", "Germano", "Gil", "Gilberto", "Gonçalo", "Graciano",
         "Gregório", "Guilherme", "Gustavo", "Henrique", "Hermínio", "Hilário", "Horácio", "Hugo",
         "Humberto", "Inácio", "Isaías", "Isidro", "Ivo", "Jacinto", "Jaime", "Januário",
@@ -71,8 +84,12 @@ object TraditionalNameRules {
         if (normalized in CURATED_TRADITIONAL_NAMES) return true
         if (normalized.any { it in EXCLUDED_LETTERS }) return false
         if (EXCLUDED_DIGRAPHS.any { normalized.contains(it) }) return false
+        if (normalized.indices.any { i -> normalized[i] == 'q' && normalized.getOrNull(i + 1) != 'u' }) return false
+        if (normalized.length >= 2 && normalized[0] == 's' && normalized[1] !in VOWELS) return false
+        val lastChar = normalized.lastOrNull()
+        if (lastChar != null && lastChar in CONSONANTS && lastChar !in VALID_FINAL_CONSONANTS) return false
         return normalized.zipWithNext().none { (a, b) ->
-            a == b && a in CONSONANTS && a !in NATIVE_DOUBLED_CONSONANTS
+            a == b && (a in VOWELS || (a in CONSONANTS && a !in NATIVE_DOUBLED_CONSONANTS))
         }
     }
 }

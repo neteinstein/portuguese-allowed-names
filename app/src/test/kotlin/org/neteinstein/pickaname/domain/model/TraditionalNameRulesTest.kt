@@ -30,8 +30,19 @@ class TraditionalNameRulesTest {
     }
 
     @Test
-    fun `doubled vowels are allowed`() {
-        assertThat(TraditionalNameRules.isTraditional("Isaac")).isTrue()
+    fun `names with a repeated identical vowel are not traditional`() {
+        assertThat(TraditionalNameRules.isTraditional("Isaac")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Aaron")).isFalse()
+    }
+
+    @Test
+    fun `an accented vowel next to its plain counterpart is not treated as a repeat`() {
+        assertThat(TraditionalNameRules.isTraditional("Naãlo")).isTrue()
+    }
+
+    @Test
+    fun `two identical plain vowels in a row are still rejected regardless of the accented rule`() {
+        assertThat(TraditionalNameRules.isTraditional("Naalo")).isFalse()
     }
 
     @Test
@@ -44,6 +55,42 @@ class TraditionalNameRulesTest {
     fun `names spelled with ph or th are not traditional`() {
         assertThat(TraditionalNameRules.isTraditional("Sophia")).isFalse()
         assertThat(TraditionalNameRules.isTraditional("Theodoro")).isFalse()
+    }
+
+    @Test
+    fun `names spelled with sh or tz are not traditional`() {
+        assertThat(TraditionalNameRules.isTraditional("Lasha")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Fritz")).isFalse()
+    }
+
+    @Test
+    fun `a q not immediately followed by u is not traditional`() {
+        assertThat(TraditionalNameRules.isTraditional("Qamila")).isFalse()
+    }
+
+    @Test
+    fun `a q followed by u is traditional`() {
+        assertThat(TraditionalNameRules.isTraditional("Aquilino")).isTrue()
+    }
+
+    @Test
+    fun `a name starting with s followed by a consonant is not traditional`() {
+        assertThat(TraditionalNameRules.isTraditional("Stavros")).isFalse()
+    }
+
+    @Test
+    fun `a name starting with s followed by a vowel is traditional`() {
+        assertThat(TraditionalNameRules.isTraditional("Samuel")).isTrue()
+    }
+
+    @Test
+    fun `a name ending in a consonant outside l, r, s, z, m, n is not traditional`() {
+        assertThat(TraditionalNameRules.isTraditional("Robert")).isFalse()
+    }
+
+    @Test
+    fun `a name ending in l, r, s, z, m or n is traditional`() {
+        assertThat(TraditionalNameRules.isTraditional("Ruben")).isTrue()
     }
 
     @Test
