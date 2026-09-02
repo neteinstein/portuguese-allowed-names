@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
@@ -81,6 +82,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -107,6 +109,7 @@ import org.koin.androidx.compose.koinViewModel
 import org.neteinstein.pickaname.R
 import org.neteinstein.pickaname.domain.model.Gender
 import org.neteinstein.pickaname.domain.model.NameEntry
+import org.neteinstein.pickaname.domain.model.SearchEngine
 import org.neteinstein.pickaname.presentation.common.GenderTag
 import org.neteinstein.pickaname.presentation.theme.PickANameExtendedColors
 import org.neteinstein.pickaname.presentation.theme.PickANameTheme
@@ -129,6 +132,7 @@ fun NameListScreen(
     viewModel: NameListViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val searchEngine by viewModel.searchEngine.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
     val autoRefreshFailedMessage = stringResource(R.string.name_list_auto_refresh_failed)
@@ -166,12 +170,23 @@ fun NameListScreen(
     }
 
     randomlyPickedName?.let { entry ->
-        RandomNameDialog(entry = entry, onDismiss = { randomlyPickedName = null })
+        RandomNameDialog(
+            entry = entry,
+            onDismiss = { randomlyPickedName = null },
+            onLongPress = {
+                randomlyPickedName = null
+                if (canLoadWebView(context)) {
+                    nameMeaningSearch = entry
+                } else {
+                    openUrlInCustomTab(context, buildMeaningSearchUrl(context, entry, searchEngine))
+                }
+            }
+        )
     }
 
     nameMeaningSearch?.let { entry ->
         ModalBottomSheet(onDismissRequest = { nameMeaningSearch = null }) {
-            NameMeaningBottomSheetContent(entry = entry)
+            NameMeaningBottomSheetContent(entry = entry, searchEngine = searchEngine)
         }
     }
 
@@ -303,7 +318,10 @@ fun NameListScreen(
                                         if (canLoadWebView(context)) {
                                             nameMeaningSearch = entry
                                         } else {
-                                            openUrl(context, buildMeaningSearchUrl(context, entry))
+                                            openUrlInCustomTab(
+                                                context,
+                                                buildMeaningSearchUrl(context, entry, searchEngine)
+                                            )
                                         }
                                     }
                                 )
@@ -495,14 +513,34 @@ private fun openUrl(context: Context, url: String) {
     }
 }
 
-/** A Google search for what [entry]'s name means, phrased in the app's current language. */
-private fun buildMeaningSearchUrl(context: Context, entry: NameEntry): String {
+/**
+ * Opens [url] in a Chrome Custom Tab so it's more likely to reuse the user's logged-in browser
+ * session (helps avoid Google/DuckDuckGo cookie-consent overlays a "cold" browser context would
+ * otherwise show). Falls back to [openUrl] if no Custom Tabs provider is available.
+ */
+private fun openUrlInCustomTab(context: Context, url: String) {
+    try {
+        CustomTabsIntent.Builder().build().launchUrl(context, url.toUri())
+    } catch (e: ActivityNotFoundException) {
+        openUrl(context, url)
+    }
+}
+
+/**
+ * A search for what [entry]'s name means using [engine], phrased in the app's current language.
+ * DuckDuckGo redirects straight to a Duck.ai chat answer (`ia=chat`) instead of plain results.
+ */
+private fun buildMeaningSearchUrl(context: Context, entry: NameEntry, engine: SearchEngine): String {
     val queryText = context.getString(R.string.name_meaning_search_query, entry.name)
-    return "https://www.google.com".toUri().buildUpon()
-        .appendEncodedPath("search")
-        .appendQueryParameter("q", queryText)
-        .build()
-        .toString()
+    val builder = when (engine) {
+        SearchEngine.GOOGLE -> "https://www.google.com/search".toUri().buildUpon()
+            .appendQueryParameter("q", queryText)
+
+        SearchEngine.DUCKDUCKGO -> "https://duckduckgo.com/".toUri().buildUpon()
+            .appendQueryParameter("q", queryText)
+            .appendQueryParameter("ia", "chat")
+    }
+    return builder.build().toString()
 }
 
 /**
@@ -518,11 +556,11 @@ private fun canLoadWebView(context: Context): Boolean =
         false
     }
 
-/** Bottom sheet content: a Google search for [entry]'s meaning, rendered in an embedded WebView. */
+/** Bottom sheet content: a search for [entry]'s meaning using [searchEngine], in an embedded WebView. */
 @Composable
-private fun NameMeaningBottomSheetContent(entry: NameEntry) {
+private fun NameMeaningBottomSheetContent(entry: NameEntry, searchEngine: SearchEngine) {
     val context = LocalContext.current
-    val searchUrl = remember(entry) { buildMeaningSearchUrl(context, entry) }
+    val searchUrl = remember(entry, searchEngine) { buildMeaningSearchUrl(context, entry, searchEngine) }
 
     Column(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f)) {
         Text(
@@ -863,16 +901,20 @@ private fun NameRow(entry: NameEntry, onLongPress: () -> Unit, modifier: Modifie
     val extendedColors = PickANameTheme.extendedColors
     val (avatarContainer, avatarContent) = genderAvatarColors(entry.gender, extendedColors)
     val haptics = LocalHapticFeedback.current
+    val shape = MaterialTheme.shapes.medium
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
+        shape = shape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                // Clipped to the card's own shape so the (default, radial) ripple is bounded to
+                // its rounded corners instead of spilling past them as a square.
+                .clip(shape)
                 .combinedClickable(
                     onClick = {},
                     onLongClick = {
@@ -920,10 +962,12 @@ private fun genderAvatarColors(
  * Full-screen overlay showing the dice's pick, celebrated with looping firework bursts behind
  * it. Backed by [Dialog] so the system back button dismisses it for free; tapping the scrim
  * (anywhere outside the card) dismisses it too, while a tap on the card itself is consumed so it
- * doesn't propagate to the scrim underneath it.
+ * doesn't propagate to the scrim underneath it. Long-pressing the card behaves just like
+ * long-pressing a name in the list: it dismisses this overlay and triggers [onLongPress]'s
+ * meaning search.
  */
 @Composable
-private fun RandomNameDialog(entry: NameEntry, onDismiss: () -> Unit) {
+private fun RandomNameDialog(entry: NameEntry, onDismiss: () -> Unit, onLongPress: () -> Unit) {
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -940,24 +984,32 @@ private fun RandomNameDialog(entry: NameEntry, onDismiss: () -> Unit) {
             contentAlignment = Alignment.Center
         ) {
             FireworksOverlay(modifier = Modifier.fillMaxSize())
-            RandomNameCard(entry = entry)
+            RandomNameCard(entry = entry, onLongPress = onLongPress)
         }
     }
 }
 
 @Composable
-private fun RandomNameCard(entry: NameEntry) {
+private fun RandomNameCard(entry: NameEntry, onLongPress: () -> Unit) {
     val extendedColors = PickANameTheme.extendedColors
     val (avatarContainer, avatarContent) = genderAvatarColors(entry.gender, extendedColors)
+    val haptics = LocalHapticFeedback.current
+    val shape = MaterialTheme.shapes.extraLarge
 
     Card(
-        // Consumes its own taps so tapping the card doesn't fall through to the scrim behind it.
-        modifier = Modifier.clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = null,
-            onClick = {}
-        ),
-        shape = MaterialTheme.shapes.extraLarge,
+        // Consumes its own taps so tapping the card doesn't fall through to the scrim behind it;
+        // long-pressing triggers the same meaning search a long-press in the list would. Clipped
+        // to its own shape so the (default, radial) ripple stays bounded to the rounded corners.
+        modifier = Modifier
+            .clip(shape)
+            .combinedClickable(
+                onClick = {},
+                onLongClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onLongPress()
+                }
+            ),
+        shape = shape,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
     ) {

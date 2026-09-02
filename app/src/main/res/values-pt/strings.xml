@@ -55,6 +55,14 @@
     <string name="settings_language_section">Idioma</string>
     <string name="settings_language_description">A aplicação Nomes Permitidos em Portugal segue o idioma do dispositivo. Toque abaixo para o alterar nas definições do Android.</string>
     <string name="settings_language_button">Alterar idioma da aplicação</string>
+
+    <!-- Ecrã de definições: pesquisa de nomes -->
+    <string name="settings_search_engine_section">Pesquisa de Nomes</string>
+    <string name="settings_search_engine_description">Qual motor de pesquisa usar ao premir sem soltar um nome para consultar o seu significado. O DuckDuckGo abre uma resposta instantânea de IA.</string>
+    <string name="settings_search_engine_label">Motor de pesquisa</string>
+    <string name="search_engine_google">Google</string>
+    <string name="search_engine_duckduckgo">DuckDuckGo</string>
+
     <string name="settings_source_section">Fonte dos nomes</string>
     <string name="settings_source_description">URL do documento PDF com a lista de nomes próprios portugueses oficialmente aprovados.</string>
     <string name="settings_source_url_label">URL da fonte</string>

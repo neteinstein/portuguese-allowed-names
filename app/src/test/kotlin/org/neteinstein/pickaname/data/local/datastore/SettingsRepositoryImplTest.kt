@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.neteinstein.pickaname.domain.model.NamesSourceDefaults
+import org.neteinstein.pickaname.domain.model.SearchEngine
 
 /**
  * In-memory [DataStore] test double. Real [updateData] semantics (read-modify-write against the
@@ -76,5 +77,43 @@ class SettingsRepositoryImplTest {
         repository.resetSourceUrlToDefault()
 
         assertThat(repository.getSourceUrl()).isEqualTo(NamesSourceDefaults.DEFAULT_SOURCE_URL)
+    }
+
+    @Test
+    fun `observeSearchEngine defaults to duckduckgo when nothing is persisted yet`() = runTest {
+        val repository = SettingsRepositoryImpl(FakeDataStore())
+
+        repository.observeSearchEngine().test {
+            assertThat(awaitItem()).isEqualTo(SearchEngine.DUCKDUCKGO)
+        }
+    }
+
+    @Test
+    fun `getSearchEngine returns the default when nothing is persisted yet`() = runTest {
+        val repository = SettingsRepositoryImpl(FakeDataStore())
+
+        assertThat(repository.getSearchEngine()).isEqualTo(SearchEngine.DEFAULT)
+    }
+
+    @Test
+    fun `setSearchEngine persists the new value so subsequent reads see it`() = runTest {
+        val repository = SettingsRepositoryImpl(FakeDataStore())
+
+        repository.setSearchEngine(SearchEngine.GOOGLE)
+
+        assertThat(repository.getSearchEngine()).isEqualTo(SearchEngine.GOOGLE)
+    }
+
+    @Test
+    fun `observeSearchEngine emits the new value once it is updated`() = runTest {
+        val repository = SettingsRepositoryImpl(FakeDataStore())
+
+        repository.observeSearchEngine().test {
+            assertThat(awaitItem()).isEqualTo(SearchEngine.DUCKDUCKGO)
+
+            repository.setSearchEngine(SearchEngine.GOOGLE)
+
+            assertThat(awaitItem()).isEqualTo(SearchEngine.GOOGLE)
+        }
     }
 }

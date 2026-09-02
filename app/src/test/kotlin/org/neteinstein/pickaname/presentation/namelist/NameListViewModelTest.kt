@@ -16,10 +16,12 @@ import org.neteinstein.pickaname.domain.model.AutoRefreshResult
 import org.neteinstein.pickaname.domain.model.Gender
 import org.neteinstein.pickaname.domain.model.NameEntry
 import org.neteinstein.pickaname.domain.model.NameFilter
+import org.neteinstein.pickaname.domain.model.SearchEngine
 import org.neteinstein.pickaname.domain.model.SyncFailureReason
 import org.neteinstein.pickaname.domain.model.TraditionalNameRules
 import org.neteinstein.pickaname.domain.usecase.ObserveNameCountUseCase
 import org.neteinstein.pickaname.domain.usecase.ObserveNamesUseCase
+import org.neteinstein.pickaname.domain.usecase.ObserveSearchEngineUseCase
 import org.neteinstein.pickaname.domain.usecase.RefreshNamesIfDueUseCase
 import org.neteinstein.pickaname.util.MainDispatcherRule
 
@@ -50,6 +52,7 @@ class NameListViewModelTest {
     private val observeNamesUseCase: ObserveNamesUseCase = mockk()
     private val observeNameCountUseCase: ObserveNameCountUseCase = mockk()
     private val refreshNamesIfDueUseCase: RefreshNamesIfDueUseCase = mockk()
+    private val observeSearchEngineUseCase: ObserveSearchEngineUseCase = mockk()
 
     private fun createViewModel(names: List<NameEntry> = allNames): NameListViewModel {
         every { observeNamesUseCase(any()) } answers {
@@ -61,7 +64,13 @@ class NameListViewModelTest {
             flowOf(names.count { matches(it, filter) })
         }
         coEvery { refreshNamesIfDueUseCase() } returns AutoRefreshResult.NotDue
-        return NameListViewModel(observeNamesUseCase, observeNameCountUseCase, refreshNamesIfDueUseCase)
+        every { observeSearchEngineUseCase() } returns flowOf(SearchEngine.DEFAULT)
+        return NameListViewModel(
+            observeNamesUseCase,
+            observeNameCountUseCase,
+            refreshNamesIfDueUseCase,
+            observeSearchEngineUseCase
+        )
     }
 
     @Test
@@ -235,7 +244,13 @@ class NameListViewModelTest {
             flowOf(allNames.count { matches(it, firstArg()) })
         }
         coEvery { refreshNamesIfDueUseCase() } returns AutoRefreshResult.Refreshed(namesLoaded = 5)
-        val viewModel = NameListViewModel(observeNamesUseCase, observeNameCountUseCase, refreshNamesIfDueUseCase)
+        every { observeSearchEngineUseCase() } returns flowOf(SearchEngine.DEFAULT)
+        val viewModel = NameListViewModel(
+            observeNamesUseCase,
+            observeNameCountUseCase,
+            refreshNamesIfDueUseCase,
+            observeSearchEngineUseCase
+        )
 
         viewModel.events.test {
             runCurrent()
@@ -252,7 +267,13 @@ class NameListViewModelTest {
             flowOf(allNames.count { matches(it, firstArg()) })
         }
         coEvery { refreshNamesIfDueUseCase() } returns AutoRefreshResult.Failed(SyncFailureReason.NETWORK)
-        val viewModel = NameListViewModel(observeNamesUseCase, observeNameCountUseCase, refreshNamesIfDueUseCase)
+        every { observeSearchEngineUseCase() } returns flowOf(SearchEngine.DEFAULT)
+        val viewModel = NameListViewModel(
+            observeNamesUseCase,
+            observeNameCountUseCase,
+            refreshNamesIfDueUseCase,
+            observeSearchEngineUseCase
+        )
 
         viewModel.events.test {
             runCurrent()

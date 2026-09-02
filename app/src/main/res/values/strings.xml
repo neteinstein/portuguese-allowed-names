@@ -55,6 +55,14 @@
     <string name="settings_language_section">Language</string>
     <string name="settings_language_description">Allowed Names in Portugal follows your device language. Tap below to change it in the Android settings.</string>
     <string name="settings_language_button">Change app language</string>
+
+    <!-- Settings screen: name search -->
+    <string name="settings_search_engine_section">Name Search</string>
+    <string name="settings_search_engine_description">Which search engine to use when you long-press a name to look up its meaning. DuckDuckGo opens an instant AI answer.</string>
+    <string name="settings_search_engine_label">Search engine</string>
+    <string name="search_engine_google">Google</string>
+    <string name="search_engine_duckduckgo">DuckDuckGo</string>
+
     <string name="settings_source_section">Names source</string>
     <string name="settings_source_description">URL of the PDF document listing the officially approved Portuguese first names.</string>
     <string name="settings_source_url_label">Source URL</string>
