@@ -31,7 +31,8 @@ data class NameListUiState(
     val count: Int = 0,
     val query: String = "",
     val selectedGender: Gender? = null,
-    val selectedInitial: Char? = null
+    val selectedInitial: Char? = null,
+    val traditionalOnly: Boolean = false
 )
 
 /** One-off events the name list screen should react to, e.g. by showing a Snackbar. */
@@ -50,6 +51,7 @@ class NameListViewModel(
     private val query = MutableStateFlow("")
     private val gender = MutableStateFlow<Gender?>(null)
     private val initial = MutableStateFlow<Char?>(null)
+    private val traditionalOnly = MutableStateFlow(false)
 
     private val _events = Channel<NameListEvent>(Channel.BUFFERED)
     val events: Flow<NameListEvent> = _events.receiveAsFlow()
@@ -70,8 +72,8 @@ class NameListViewModel(
      * producer and no stale-snapshot race.
      */
     private val filter: Flow<NameFilter> =
-        combine(debouncedQuery, gender, initial) { q, g, i ->
-            NameFilter(query = q, gender = g, initial = i)
+        combine(debouncedQuery, gender, initial, traditionalOnly) { q, g, i, traditional ->
+            NameFilter(query = q, gender = g, initial = i, traditionalOnly = traditional)
         }
 
     val uiState: StateFlow<NameListUiState> = filter.flatMapLatest { currentFilter ->
@@ -89,7 +91,8 @@ class NameListViewModel(
                 count = count,
                 query = rawQuery,
                 selectedGender = currentFilter.gender,
-                selectedInitial = currentFilter.initial
+                selectedInitial = currentFilter.initial,
+                traditionalOnly = currentFilter.traditionalOnly
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), NameListUiState())
@@ -116,5 +119,9 @@ class NameListViewModel(
 
     fun onInitialSelected(selected: Char?) {
         initial.value = selected
+    }
+
+    fun onTraditionalOnlyChanged(enabled: Boolean) {
+        traditionalOnly.value = enabled
     }
 }

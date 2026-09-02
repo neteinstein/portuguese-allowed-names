@@ -7,5 +7,6 @@ package org.neteinstein.pickaname.domain.model
 data class NameFilter(
     val query: String = "",
     val gender: Gender? = null,
-    val initial: Char? = null
+    val initial: Char? = null,
+    val traditionalOnly: Boolean = false
 )

@@ -20,8 +20,10 @@
     <string name="name_list_search_hint">Pesquisar nomes</string>
     <string name="filter_section_gender">Género</string>
     <string name="filter_section_initial">Inicial</string>
+    <string name="filter_section_other">Outros filtros</string>
     <string name="filter_gender_all">Todos</string>
     <string name="filter_initial_all">Todas</string>
+    <string name="filter_traditional_names">Nomes tradicionais</string>
     <string name="gender_female">Feminino</string>
     <string name="gender_male">Masculino</string>
     <string name="name_list_empty_state">Nenhum nome corresponde aos filtros selecionados.</string>
@@ -36,8 +38,13 @@
     <string name="name_rules_link_register_birth_title">Como registar um nascimento</string>
     <string name="name_rules_link_register_birth_description">Guia oficial do Governo sobre como registar o nascimento de um recém-nascido em Portugal.</string>
     <string name="name_rules_footer">Nos casos invulgares ou de fronteira, a resposta definitiva cabe sempre ao registo civil / IRN.</string>
+    <string name="traditional_names_info_title">Nomes tradicionais portugueses</string>
+    <string name="traditional_names_info_intro">O IRN (a entidade responsável pelo registo civil em Portugal) não publica qualquer lista ou indicação de quais os nomes considerados \"tradicionais\" portugueses. Este filtro é apenas uma aproximação feita com base no melhor esforço, e não uma classificação oficial.</string>
+    <string name="traditional_names_info_disclaimer">Trate este filtro como uma indicação aproximada, não como uma resposta definitiva. Alguns nomes tradicionais podem ficar ocultos, e alguns nomes ocultos podem, ainda assim, ser tradicionais.</string>
+    <string name="traditional_names_info_rules">Como melhor esforço, um nome é apresentado quando corresponde a uma lista selecionada de nomes portugueses clássicos bem conhecidos, ou, caso contrário, quando evita as letras K, Y e W, as grafias \"ph\"/\"th\" e consoantes duplicadas que não sejam \"rr\"/\"ss\" (ambas nativas do português) — padrões raros ou estranhos à ortografia portuguesa mais antiga.</string>
     <string name="cd_settings_icon">Definições</string>
     <string name="cd_name_rules_icon">Regras dos nomes</string>
+    <string name="cd_traditional_names_info_icon">Sobre o filtro de nomes tradicionais</string>
     <string name="cd_random_name_icon">Escolher um nome aleatório</string>
     <string name="cd_clear_search">Limpar pesquisa</string>
     <string name="cd_letter_fast_scroller">Arraste para saltar para uma letra</string>
