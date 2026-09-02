@@ -73,7 +73,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.ripple.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -902,7 +901,6 @@ private fun NameRow(entry: NameEntry, onLongPress: () -> Unit, modifier: Modifie
     val extendedColors = PickANameTheme.extendedColors
     val (avatarContainer, avatarContent) = genderAvatarColors(entry.gender, extendedColors)
     val haptics = LocalHapticFeedback.current
-    val interactionSource = remember { MutableInteractionSource() }
     val shape = MaterialTheme.shapes.medium
 
     Card(
@@ -914,10 +912,10 @@ private fun NameRow(entry: NameEntry, onLongPress: () -> Unit, modifier: Modifie
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                // Clipped to the card's own shape so the (default, radial) ripple is bounded to
+                // its rounded corners instead of spilling past them as a square.
                 .clip(shape)
                 .combinedClickable(
-                    interactionSource = interactionSource,
-                    indication = ripple(),
                     onClick = {},
                     onLongClick = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -996,17 +994,15 @@ private fun RandomNameCard(entry: NameEntry, onLongPress: () -> Unit) {
     val extendedColors = PickANameTheme.extendedColors
     val (avatarContainer, avatarContent) = genderAvatarColors(entry.gender, extendedColors)
     val haptics = LocalHapticFeedback.current
-    val interactionSource = remember { MutableInteractionSource() }
     val shape = MaterialTheme.shapes.extraLarge
 
     Card(
         // Consumes its own taps so tapping the card doesn't fall through to the scrim behind it;
-        // long-pressing triggers the same meaning search a long-press in the list would.
+        // long-pressing triggers the same meaning search a long-press in the list would. Clipped
+        // to its own shape so the (default, radial) ripple stays bounded to the rounded corners.
         modifier = Modifier
             .clip(shape)
             .combinedClickable(
-                interactionSource = interactionSource,
-                indication = ripple(),
                 onClick = {},
                 onLongClick = {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
