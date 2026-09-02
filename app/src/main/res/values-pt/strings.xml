@@ -41,7 +41,7 @@
     <string name="traditional_names_info_title">Nomes tradicionais portugueses</string>
     <string name="traditional_names_info_intro">O IRN (a entidade responsável pelo registo civil em Portugal) não publica qualquer lista ou indicação de quais os nomes considerados \"tradicionais\" portugueses. Este filtro é apenas uma aproximação feita com base no melhor esforço, e não uma classificação oficial.</string>
     <string name="traditional_names_info_disclaimer">Trate este filtro como uma indicação aproximada, não como uma resposta definitiva. Alguns nomes tradicionais podem ficar ocultos, e alguns nomes ocultos podem, ainda assim, ser tradicionais.</string>
-    <string name="traditional_names_info_rules">Como melhor esforço, um nome é ocultado quando contém as letras K, Y ou W, ou uma consoante duplicada (como \"nn\" ou \"ll\") — padrões raros ou estranhos à ortografia portuguesa mais antiga.</string>
+    <string name="traditional_names_info_rules">Como melhor esforço, um nome é apresentado quando corresponde a uma lista selecionada de nomes portugueses clássicos bem conhecidos, ou, caso contrário, quando evita as letras K, Y e W, as grafias \"ph\"/\"th\" e consoantes duplicadas que não sejam \"rr\"/\"ss\" (ambas nativas do português) — padrões raros ou estranhos à ortografia portuguesa mais antiga.</string>
     <string name="cd_settings_icon">Definições</string>
     <string name="cd_name_rules_icon">Regras dos nomes</string>
     <string name="cd_traditional_names_info_icon">Sobre o filtro de nomes tradicionais</string>

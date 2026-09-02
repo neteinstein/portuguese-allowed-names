@@ -41,7 +41,7 @@
     <string name="traditional_names_info_title">Traditional Portuguese names</string>
     <string name="traditional_names_info_intro">The IRN (Portugal\'s civil registry authority) doesn\'t publish any list or flag identifying which names are considered \"traditional\" Portuguese names. This filter is only a best-effort approximation, not an official classification.</string>
     <string name="traditional_names_info_disclaimer">Treat this filter as a rough guide, not a definitive answer. Some traditional names may be hidden, and some hidden names may still be traditional.</string>
-    <string name="traditional_names_info_rules">As a best effort, a name is hidden when it contains the letters K, Y or W, or a doubled consonant (like \"nn\" or \"ll\") — patterns that are rare or foreign to older Portuguese spelling.</string>
+    <string name="traditional_names_info_rules">As a best effort, a name is shown when it matches a curated list of well-known classic Portuguese names, or otherwise when it avoids the letters K, Y and W, the spellings \"ph\"/\"th\", and doubled consonants other than \"rr\"/\"ss\" (both native to Portuguese) — patterns that are rare or foreign to older Portuguese spelling.</string>
     <string name="cd_settings_icon">Settings</string>
     <string name="cd_name_rules_icon">Name rules</string>
     <string name="cd_traditional_names_info_icon">About the traditional names filter</string>
