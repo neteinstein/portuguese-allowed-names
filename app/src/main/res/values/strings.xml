@@ -49,6 +49,7 @@
     <string name="cd_clear_search">Clear search</string>
     <string name="cd_letter_fast_scroller">Drag to jump to a letter</string>
     <string name="name_meaning_search_query">What\'s the meaning of the name %1$s</string>
+    <string name="name_meaning_bottom_sheet_title">Discovering the meaning of the name %1$s</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Settings</string>

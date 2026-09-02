@@ -570,7 +570,7 @@ private fun NameMeaningBottomSheetContent(entry: NameEntry, searchEngine: Search
 
     Column(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f)) {
         Text(
-            text = entry.name,
+            text = stringResource(R.string.name_meaning_bottom_sheet_title, entry.name),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
