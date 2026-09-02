@@ -22,8 +22,10 @@ import org.neteinstein.pickaname.domain.model.AutoRefreshResult
 import org.neteinstein.pickaname.domain.model.Gender
 import org.neteinstein.pickaname.domain.model.NameEntry
 import org.neteinstein.pickaname.domain.model.NameFilter
+import org.neteinstein.pickaname.domain.model.SearchEngine
 import org.neteinstein.pickaname.domain.usecase.ObserveNameCountUseCase
 import org.neteinstein.pickaname.domain.usecase.ObserveNamesUseCase
+import org.neteinstein.pickaname.domain.usecase.ObserveSearchEngineUseCase
 import org.neteinstein.pickaname.domain.usecase.RefreshNamesIfDueUseCase
 
 data class NameListUiState(
@@ -45,8 +47,18 @@ sealed interface NameListEvent {
 class NameListViewModel(
     private val observeNamesUseCase: ObserveNamesUseCase,
     private val observeNameCountUseCase: ObserveNameCountUseCase,
-    private val refreshNamesIfDueUseCase: RefreshNamesIfDueUseCase
+    private val refreshNamesIfDueUseCase: RefreshNamesIfDueUseCase,
+    private val observeSearchEngineUseCase: ObserveSearchEngineUseCase
 ) : ViewModel() {
+
+    /**
+     * Kept separate from [uiState] rather than folded into its `combine` chain: the chosen search
+     * engine has nothing to do with filtering names, so mixing it in would recompute the whole
+     * names query on every settings change for no reason.
+     */
+    val searchEngine: StateFlow<SearchEngine> =
+        observeSearchEngineUseCase()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchEngine.DEFAULT)
 
     private val query = MutableStateFlow("")
     private val gender = MutableStateFlow<Gender?>(null)

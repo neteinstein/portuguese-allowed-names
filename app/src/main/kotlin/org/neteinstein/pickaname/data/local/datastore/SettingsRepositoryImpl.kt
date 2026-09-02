@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.neteinstein.pickaname.domain.model.NamesSourceDefaults
 import org.neteinstein.pickaname.domain.model.RefreshPeriod
+import org.neteinstein.pickaname.domain.model.SearchEngine
 import org.neteinstein.pickaname.domain.repository.SettingsRepository
 
 /**
@@ -44,6 +45,15 @@ class SettingsRepositoryImpl(
         dataStore.edit { prefs -> prefs[REFRESH_PERIOD_KEY] = period.name }
     }
 
+    override fun observeSearchEngine(): Flow<SearchEngine> =
+        dataStore.data.map { prefs -> prefs[SEARCH_ENGINE_KEY].toSearchEngine() }
+
+    override suspend fun getSearchEngine(): SearchEngine = observeSearchEngine().first()
+
+    override suspend fun setSearchEngine(engine: SearchEngine) {
+        dataStore.edit { prefs -> prefs[SEARCH_ENGINE_KEY] = engine.name }
+    }
+
     override suspend fun getLastRefreshTimestamp(): Long? =
         dataStore.data.map { prefs -> prefs[LAST_REFRESH_TIMESTAMP_KEY] }.first()
 
@@ -54,9 +64,13 @@ class SettingsRepositoryImpl(
     private fun String?.toRefreshPeriod(): RefreshPeriod =
         RefreshPeriod.entries.firstOrNull { it.name == this } ?: RefreshPeriod.DEFAULT
 
+    private fun String?.toSearchEngine(): SearchEngine =
+        SearchEngine.entries.firstOrNull { it.name == this } ?: SearchEngine.DEFAULT
+
     private companion object {
         val SOURCE_URL_KEY = stringPreferencesKey("names_source_url")
         val REFRESH_PERIOD_KEY = stringPreferencesKey("names_refresh_period")
         val LAST_REFRESH_TIMESTAMP_KEY = longPreferencesKey("names_last_refresh_timestamp")
+        val SEARCH_ENGINE_KEY = stringPreferencesKey("name_search_engine")
     }
 }

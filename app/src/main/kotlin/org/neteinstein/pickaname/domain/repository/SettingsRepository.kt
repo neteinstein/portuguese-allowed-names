@@ -2,6 +2,7 @@ package org.neteinstein.pickaname.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 import org.neteinstein.pickaname.domain.model.RefreshPeriod
+import org.neteinstein.pickaname.domain.model.SearchEngine
 
 /**
  * Persisted user preferences: the URL the names list PDF is downloaded from, how often it should
@@ -24,6 +25,13 @@ interface SettingsRepository {
     suspend fun getRefreshPeriod(): RefreshPeriod
 
     suspend fun setRefreshPeriod(period: RefreshPeriod)
+
+    /** Emits the currently configured name-meaning search engine, defaulting to [SearchEngine.DEFAULT]. */
+    fun observeSearchEngine(): Flow<SearchEngine>
+
+    suspend fun getSearchEngine(): SearchEngine
+
+    suspend fun setSearchEngine(engine: SearchEngine)
 
     /**
      * Epoch-millis timestamp of the last successful sync (initial load, manual source change, or

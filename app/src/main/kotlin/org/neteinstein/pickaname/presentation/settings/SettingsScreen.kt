@@ -28,6 +28,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -61,13 +62,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import org.neteinstein.pickaname.R
 import org.neteinstein.pickaname.domain.model.RefreshPeriod
+import org.neteinstein.pickaname.domain.model.SearchEngine
 
 /**
- * Settings screen: link out to the OS per-app language picker, a form to view/edit/reset the
- * PDF source URL, and a dropdown to configure how often the app should automatically re-check
- * that source. Saving or resetting the URL fires [SettingsEvent.SourceUpdated], which the caller
- * uses to navigate to the sync screen (re-downloading and re-parsing with the new source); the
- * refresh cadence applies immediately on selection since it doesn't need a resync.
+ * Settings screen: link out to the OS per-app language picker, a dropdown for which search
+ * engine long-pressing a name should use, a form to view/edit/reset the PDF source URL, and a
+ * dropdown to configure how often the app should automatically re-check that source. Saving or
+ * resetting the URL fires [SettingsEvent.SourceUpdated], which the caller uses to navigate to the
+ * sync screen (re-downloading and re-parsing with the new source); the search engine and refresh
+ * cadence both apply immediately on selection since neither needs a resync.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -139,6 +142,20 @@ fun SettingsScreen(
                 }
 
                 SettingsSectionCard(
+                    icon = Icons.Filled.Search,
+                    title = stringResource(R.string.settings_search_engine_section),
+                    description = stringResource(R.string.settings_search_engine_description)
+                ) {
+                    EnumDropdown(
+                        selected = uiState.searchEngine,
+                        options = SearchEngine.entries,
+                        label = stringResource(R.string.settings_search_engine_label),
+                        optionLabel = { stringResource(it.labelRes()) },
+                        onSelected = viewModel::onSearchEngineSelected
+                    )
+                }
+
+                SettingsSectionCard(
                     icon = Icons.Filled.Link,
                     title = stringResource(R.string.settings_source_section),
                     description = stringResource(R.string.settings_source_description)
@@ -182,8 +199,11 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_refresh_section),
                     description = stringResource(R.string.settings_refresh_description)
                 ) {
-                    RefreshPeriodDropdown(
+                    EnumDropdown(
                         selected = uiState.refreshPeriod,
+                        options = RefreshPeriod.entries,
+                        label = stringResource(R.string.settings_refresh_period_label),
+                        optionLabel = { stringResource(it.labelRes()) },
                         onSelected = viewModel::onRefreshPeriodSelected
                     )
                 }
@@ -239,11 +259,15 @@ private fun SettingsSectionCard(
     }
 }
 
+/** A read-only dropdown for picking one of [options], the enum's label rendered via [optionLabel]. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RefreshPeriodDropdown(
-    selected: RefreshPeriod,
-    onSelected: (RefreshPeriod) -> Unit
+private fun <T> EnumDropdown(
+    selected: T,
+    options: List<T>,
+    label: String,
+    optionLabel: @Composable (T) -> String,
+    onSelected: (T) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(
@@ -255,20 +279,20 @@ private fun RefreshPeriodDropdown(
                 .fillMaxWidth()
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
             readOnly = true,
-            value = stringResource(selected.labelRes()),
+            value = optionLabel(selected),
             onValueChange = {},
-            label = { Text(stringResource(R.string.settings_refresh_period_label)) },
+            label = { Text(label) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }
         )
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            RefreshPeriod.entries.forEach { period ->
+            options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(stringResource(period.labelRes())) },
+                    text = { Text(optionLabel(option)) },
                     onClick = {
-                        onSelected(period)
+                        onSelected(option)
                         expanded = false
                     }
                 )
@@ -283,6 +307,11 @@ private fun RefreshPeriod.labelRes(): Int = when (this) {
     RefreshPeriod.QUARTERLY -> R.string.refresh_period_quarterly
     RefreshPeriod.BI_YEARLY -> R.string.refresh_period_bi_yearly
     RefreshPeriod.YEARLY -> R.string.refresh_period_yearly
+}
+
+private fun SearchEngine.labelRes(): Int = when (this) {
+    SearchEngine.GOOGLE -> R.string.search_engine_google
+    SearchEngine.DUCKDUCKGO -> R.string.search_engine_duckduckgo
 }
 
 private fun openAppLocaleSettings(context: Context) {

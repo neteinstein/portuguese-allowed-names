@@ -12,10 +12,13 @@ import org.junit.Rule
 import org.junit.Test
 import org.neteinstein.pickaname.domain.model.NamesSourceDefaults
 import org.neteinstein.pickaname.domain.model.RefreshPeriod
+import org.neteinstein.pickaname.domain.model.SearchEngine
 import org.neteinstein.pickaname.domain.usecase.GetRefreshPeriodUseCase
+import org.neteinstein.pickaname.domain.usecase.GetSearchEngineUseCase
 import org.neteinstein.pickaname.domain.usecase.GetSourceUrlUseCase
 import org.neteinstein.pickaname.domain.usecase.ResetSourceUrlUseCase
 import org.neteinstein.pickaname.domain.usecase.UpdateRefreshPeriodUseCase
+import org.neteinstein.pickaname.domain.usecase.UpdateSearchEngineUseCase
 import org.neteinstein.pickaname.domain.usecase.UpdateSourceUrlUseCase
 import org.neteinstein.pickaname.util.MainDispatcherRule
 
@@ -30,16 +33,24 @@ class SettingsViewModelTest {
     private val resetSourceUrlUseCase: ResetSourceUrlUseCase = mockk()
     private val getRefreshPeriodUseCase: GetRefreshPeriodUseCase = mockk()
     private val updateRefreshPeriodUseCase: UpdateRefreshPeriodUseCase = mockk(relaxed = true)
+    private val getSearchEngineUseCase: GetSearchEngineUseCase = mockk()
+    private val updateSearchEngineUseCase: UpdateSearchEngineUseCase = mockk(relaxed = true)
 
-    private fun createViewModel(refreshPeriod: RefreshPeriod = RefreshPeriod.DEFAULT): SettingsViewModel {
+    private fun createViewModel(
+        refreshPeriod: RefreshPeriod = RefreshPeriod.DEFAULT,
+        searchEngine: SearchEngine = SearchEngine.DEFAULT
+    ): SettingsViewModel {
         coEvery { getSourceUrlUseCase() } returns "https://current.example.com/list.pdf"
         coEvery { getRefreshPeriodUseCase() } returns refreshPeriod
+        coEvery { getSearchEngineUseCase() } returns searchEngine
         return SettingsViewModel(
             getSourceUrlUseCase,
             updateSourceUrlUseCase,
             resetSourceUrlUseCase,
             getRefreshPeriodUseCase,
-            updateRefreshPeriodUseCase
+            updateRefreshPeriodUseCase,
+            getSearchEngineUseCase,
+            updateSearchEngineUseCase
         )
     }
 
@@ -65,6 +76,33 @@ class SettingsViewModelTest {
         val viewModel = createViewModel()
 
         assertThat(viewModel.uiState.value.refreshPeriod).isEqualTo(RefreshPeriod.YEARLY)
+    }
+
+    @Test
+    fun `loads the currently configured search engine on init`() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = createViewModel(searchEngine = SearchEngine.GOOGLE)
+        runCurrent()
+
+        assertThat(viewModel.uiState.value.searchEngine).isEqualTo(SearchEngine.GOOGLE)
+    }
+
+    @Test
+    fun `defaults the search engine to duckduckgo before it loads`() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = createViewModel()
+
+        assertThat(viewModel.uiState.value.searchEngine).isEqualTo(SearchEngine.DUCKDUCKGO)
+    }
+
+    @Test
+    fun `selecting a search engine updates state immediately and persists it`() = runTest(mainDispatcherRule.dispatcher) {
+        val viewModel = createViewModel()
+        runCurrent()
+
+        viewModel.onSearchEngineSelected(SearchEngine.GOOGLE)
+
+        assertThat(viewModel.uiState.value.searchEngine).isEqualTo(SearchEngine.GOOGLE)
+        runCurrent()
+        coVerify(exactly = 1) { updateSearchEngineUseCase(SearchEngine.GOOGLE) }
     }
 
     @Test
