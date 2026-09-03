@@ -355,9 +355,9 @@ fun NameListScreen(
  * constants (not string resources) since URLs aren't translatable content.
  */
 private const val NAME_RULES_URL =
-    "https://irn.justica.gov.pt/Servicos/Cidadao/Nascimento/Composicao-do-nome"
+    "https://link.neteinstein.org/portuguese-allowed-names-composition"
 private const val ALLOWED_NAMES_PDF_URL =
-    "https://irn.justica.gov.pt/Portals/33/Regras%20Nome%20Pr%C3%B3prio/Lista%20Nomes%20Pr%C3%B3prios.pdf?ver=WNDmmwiSO3uacofjmNoxEQ%3D%3D"
+    "https://link.neteinstein.org/portuguese-allowed-names-list"
 private const val REGISTER_BIRTH_URL = "https://justica.gov.pt/Servicos/Registar-nascimento"
 
 private data class OfficialResourceLink(
