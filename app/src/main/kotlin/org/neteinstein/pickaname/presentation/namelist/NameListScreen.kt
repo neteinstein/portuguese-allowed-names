@@ -73,6 +73,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -185,7 +186,12 @@ fun NameListScreen(
     }
 
     nameMeaningSearch?.let { entry ->
-        ModalBottomSheet(onDismissRequest = { nameMeaningSearch = null }) {
+        // Skips the partially-expanded detent: the embedded WebView doesn't handle being resized
+        // mid-drag well (its content would blank out while dragging between detents), so the
+        // sheet opens straight at its full (85% of screen, see NameMeaningBottomSheetContent) size
+        // instead of animating there from a shorter one.
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(onDismissRequest = { nameMeaningSearch = null }, sheetState = sheetState) {
             NameMeaningBottomSheetContent(entry = entry, searchEngine = searchEngine)
         }
     }
@@ -564,7 +570,7 @@ private fun NameMeaningBottomSheetContent(entry: NameEntry, searchEngine: Search
 
     Column(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f)) {
         Text(
-            text = entry.name,
+            text = stringResource(R.string.name_meaning_bottom_sheet_title, entry.name),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
@@ -577,6 +583,13 @@ private fun NameMeaningBottomSheetContent(entry: NameEntry, searchEngine: Search
                     // Keeps taps on search results loading inside this WebView instead of
                     // spawning external intents, so exploring results stays in the sheet.
                     webViewClient = WebViewClient()
+                    // Without this, the bottom sheet's own drag handling steals vertical swipes
+                    // that start over the WebView, making it impossible to scroll the page inside
+                    // it (e.g. to reach a cookie-consent button below the fold).
+                    setOnTouchListener { view, _ ->
+                        view.parent?.requestDisallowInterceptTouchEvent(true)
+                        false
+                    }
                     loadUrl(searchUrl)
                 }
             }
