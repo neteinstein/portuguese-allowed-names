@@ -5,7 +5,7 @@ _Last updated: July 12, 2026_
 **English version below · [Versão em português mais abaixo](#política-de-privacidade)**
 
 "Allowed Names in Portugal" ("the App") is developed and maintained by Pedro Vicente
-([github.com/neteinstein](https://github.com/neteinstein)) as an open-source project. This
+([github.com/neteinstein](https://github.com/neteinstein)). This
 Privacy Policy explains what information the App accesses and how it is used.
 
 ## Summary
@@ -77,9 +77,7 @@ in this file, with an updated "Last updated" date at the top.
 
 ## Contact us
 
-Questions about this Privacy Policy? Open an issue at
-[github.com/neteinstein/portuguese-allowed-names/issues](https://github.com/neteinstein/portuguese-allowed-names/issues)
-or email [neteinstein@gmail.com](mailto:neteinstein@gmail.com).
+Questions about this Privacy Policy? Send an email to play-store-neteinstein@googlegroups.com
 
 ---
 
@@ -165,6 +163,4 @@ no topo atualizada.
 
 ## Contacte-nos
 
-Tem questões sobre esta Política de Privacidade? Abra uma issue em
-[github.com/neteinstein/portuguese-allowed-names/issues](https://github.com/neteinstein/portuguese-allowed-names/issues)
-ou envie um email para [neteinstein@gmail.com](mailto:neteinstein@gmail.com).
+Tem questões sobre esta Política de Privacidade? Contact play-store-neteinstein@googlegroups.com
