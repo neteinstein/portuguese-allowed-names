@@ -24,6 +24,10 @@ class NameRepositoryImplTest {
     private val kevinEntity = NameEntity(id = 2, name = "Kevin", gender = "M", initialLetter = "K")
     private val kevinEntry = NameEntry(id = 2, name = "Kevin", gender = Gender.MALE)
 
+    // Passes every phonotactic check and isn't in the curated allowlist, so it's traditional
+    // unless something else (like being used by both genders) says otherwise.
+    private val arianaEntity = NameEntity(id = 3, name = "Ariana", gender = "F", initialLetter = "A")
+
     @Test
     fun `observeNames passes an unrestricted filter through as all-null dao params`() = runTest {
         every { nameDao.observeNames(gender = null, initial = null, query = null) } returns
@@ -85,11 +89,23 @@ class NameRepositoryImplTest {
     @Test
     fun `observeNames excludes a name used by both genders when traditionalOnly is enabled`() = runTest {
         every { nameDao.observeNames(gender = null, initial = null, query = null) } returns
+            flowOf(listOf(arianaEntity))
+        every { nameDao.observeNamesUsedByBothGenders() } returns flowOf(listOf("Ariana"))
+
+        repository.observeNames(NameFilter(traditionalOnly = true)).test {
+            assertThat(awaitItem()).isEmpty()
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun `observeNames keeps a curated name traditional even if used by both genders`() = runTest {
+        every { nameDao.observeNames(gender = null, initial = null, query = null) } returns
             flowOf(listOf(aliceEntity))
         every { nameDao.observeNamesUsedByBothGenders() } returns flowOf(listOf("Alice"))
 
         repository.observeNames(NameFilter(traditionalOnly = true)).test {
-            assertThat(awaitItem()).isEmpty()
+            assertThat(awaitItem()).containsExactly(aliceEntry)
             awaitComplete()
         }
     }
