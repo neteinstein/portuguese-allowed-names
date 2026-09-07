@@ -98,6 +98,15 @@ jobs:
           api-level: 29
           target: default
           arch: x86_64
+          # Without an explicit -gpu mode the emulator can fall back to an unreliable
+          # auto-detected hardware GPU path on these headless runners (no real display),
+          # intermittently failing to ever render a frame - the app then never leaves what
+          # SplashSmokeTest sees as "not displayed", even though it's not stuck or crashed.
+          # swiftshader_indirect is software rendering, so it's deterministic here regardless
+          # of the runner's actual GPU availability. disable-animations avoids a similar class
+          # of UI-timing flakiness from system animations mid-test.
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none
           script: ./gradlew connectedDebugAndroidTest
           
       - name: Upload instrumented test results
