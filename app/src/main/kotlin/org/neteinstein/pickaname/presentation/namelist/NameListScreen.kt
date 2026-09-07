@@ -3,6 +3,7 @@ package org.neteinstein.pickaname.presentation.namelist
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.browser.customtabs.CustomTabsIntent
@@ -579,6 +580,13 @@ private fun NameMeaningBottomSheetContent(entry: NameEntry, searchEngine: Search
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
                 WebView(ctx).apply {
+                    // ModalBottomSheet hosts its content in its own dialog window; a hardware-
+                    // accelerated WebView's compositor surface can attach to that window before
+                    // its first layout pass completes, leaving the WebView painting black until
+                    // something (e.g. a drag) forces a relayout. Software rendering avoids that
+                    // surface-sync race entirely.
+                    setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+                    setBackgroundColor(android.graphics.Color.WHITE)
                     settings.javaScriptEnabled = true
                     // Keeps taps on search results loading inside this WebView instead of
                     // spawning external intents, so exploring results stays in the sheet.
