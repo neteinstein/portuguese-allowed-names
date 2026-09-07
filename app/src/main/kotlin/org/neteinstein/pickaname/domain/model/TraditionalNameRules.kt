@@ -25,6 +25,10 @@ package org.neteinstein.pickaname.domain.model
  *      which are the only doubled letters Portuguese ever legitimately uses; doubled vowels
  *      ("aa", "ee") get no such exception. Comparison is by exact character, so an accented vowel
  *      is never conflated with its plain counterpart (e.g. "ã" next to "a" isn't a repeat).
+ *    - starts with "abd" - the Arabic patronymic/theophoric prefix meaning "servant of" (as in
+ *      "Abdel", "Abdul", "Abderrahmane"). These compounds are spelled with letters Portuguese
+ *      itself uses, so they pass every phonotactic check above, but the "abd-" name-formation
+ *      pattern has no Portuguese equivalent.
  */
 object TraditionalNameRules {
 
@@ -82,6 +86,7 @@ object TraditionalNameRules {
     fun isTraditional(name: String): Boolean {
         val normalized = name.lowercase()
         if (normalized in CURATED_TRADITIONAL_NAMES) return true
+        if (normalized.startsWith("abd")) return false
         if (normalized.any { it in EXCLUDED_LETTERS }) return false
         if (EXCLUDED_DIGRAPHS.any { normalized.contains(it) }) return false
         if (normalized.indices.any { i -> normalized[i] == 'q' && normalized.getOrNull(i + 1) != 'u' }) return false

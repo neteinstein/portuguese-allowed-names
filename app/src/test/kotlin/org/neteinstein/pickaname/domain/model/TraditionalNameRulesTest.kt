@@ -105,4 +105,20 @@ class TraditionalNameRulesTest {
         assertThat(TraditionalNameRules.isTraditional("maria")).isTrue()
         assertThat(TraditionalNameRules.isTraditional("GONÇALO")).isTrue()
     }
+
+    @Test
+    fun `names starting with the Arabic abd- prefix are not traditional`() {
+        assertThat(TraditionalNameRules.isTraditional("Abdel")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Abdelhadi")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Abdelrahman")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Abderrahmane")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Abdrahman")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Abducadre")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Abdul")).isFalse()
+    }
+
+    @Test
+    fun `the abd- prefix check is case-insensitive`() {
+        assertThat(TraditionalNameRules.isTraditional("ABDUL")).isFalse()
+    }
 }
