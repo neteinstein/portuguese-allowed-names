@@ -13,9 +13,13 @@ import org.junit.runner.RunWith
  * with real Koin DI wiring and a real (test-device-local) Room database/DataStore.
  *
  * [org.neteinstein.pickaname.presentation.splash.SplashViewModel] guarantees a minimum 900ms
- * splash duration before deciding where to navigate next, so asserting the splash content
- * immediately after launch is deterministic regardless of device speed, network availability,
- * or whether the on-device database already has data from a previous run.
+ * splash duration before deciding where to navigate next, so the splash content itself is
+ * deterministic regardless of device speed, network availability, or whether the on-device
+ * database already has data from a previous run. What isn't deterministic is how long a cold
+ * CI emulator takes to finish booting and actually paint the first frame - the composable can
+ * exist in the semantics tree before the window has been laid out/attached, which reads as "not
+ * displayed" rather than "not found". [androidx.compose.ui.test.junit4.ComposeTestRule.waitUntil]
+ * polls for the real on-screen state instead of asserting once immediately after launch.
  */
 @RunWith(AndroidJUnit4::class)
 class SplashSmokeTest {
@@ -27,8 +31,10 @@ class SplashSmokeTest {
     fun appLaunchesAndShowsSplashScreen() {
         val expectedAppName = composeTestRule.activity.getString(R.string.app_name)
 
-        composeTestRule
-            .onNodeWithText(expectedAppName)
-            .assertIsDisplayed()
+        composeTestRule.waitUntil(timeoutMillis = 15_000) {
+            runCatching {
+                composeTestRule.onNodeWithText(expectedAppName).assertIsDisplayed()
+            }.isSuccess
+        }
     }
 }
