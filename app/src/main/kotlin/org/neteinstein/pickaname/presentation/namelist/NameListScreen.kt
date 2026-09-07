@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.view.View
+import android.view.ViewTreeObserver
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.browser.customtabs.CustomTabsIntent
@@ -599,6 +600,19 @@ private fun NameMeaningBottomSheetContent(entry: NameEntry, searchEngine: Search
                         false
                     }
                     loadUrl(searchUrl)
+
+                    // skipPartiallyExpanded means the sheet settles at its target size in one
+                    // step instead of resizing as the user drags - so unlike before, nothing
+                    // naturally forces the extra relayout the WebView needs to actually paint.
+                    // Requesting one manually once the dialog window's first layout pass
+                    // completes reproduces that same fix without requiring user interaction.
+                    viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+                        override fun onGlobalLayout() {
+                            viewTreeObserver.removeOnGlobalLayoutListener(this)
+                            requestLayout()
+                            invalidate()
+                        }
+                    })
                 }
             }
         )
