@@ -121,4 +121,26 @@ class TraditionalNameRulesTest {
     fun `the abd- prefix check is case-insensitive`() {
         assertThat(TraditionalNameRules.isTraditional("ABDUL")).isFalse()
     }
+
+    @Test
+    fun `names with letters outside the Portuguese alphabet are not traditional`() {
+        assertThat(TraditionalNameRules.isTraditional("Björn")).isFalse() // Swedish ö
+        assertThat(TraditionalNameRules.isTraditional("Zoë")).isFalse() // French/English diaeresis ë
+        assertThat(TraditionalNameRules.isTraditional("Åsa")).isFalse() // Nordic å
+        assertThat(TraditionalNameRules.isTraditional("Łukasz")).isFalse() // Polish ł
+        assertThat(TraditionalNameRules.isTraditional("Müller")).isFalse() // German ü
+    }
+
+    @Test
+    fun `names spelled with zh, sch, cz or sz are not traditional`() {
+        assertThat(TraditionalNameRules.isTraditional("Zhu")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Anschel")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Aczar")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Aszter")).isFalse()
+    }
+
+    @Test
+    fun `a hyphenated compound name spelled entirely in Portuguese is still traditional`() {
+        assertThat(TraditionalNameRules.isTraditional("Maria-João")).isTrue()
+    }
 }

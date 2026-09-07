@@ -29,15 +29,26 @@ package org.neteinstein.pickaname.domain.model
  *      "Abdel", "Abdul", "Abderrahmane"). These compounds are spelled with letters Portuguese
  *      itself uses, so they pass every phonotactic check above, but the "abd-" name-formation
  *      pattern has no Portuguese equivalent.
+ *    - uses a letter outside the Portuguese alphabet, i.e. anything other than "a"-"z", the
+ *      hyphen (needed for legitimate compound names like "Maria-João"), and the accented letters
+ *      "áàâãéêíóôõúç". This is what actually catches most non-Portuguese names: it rejects any
+ *      Cyrillic, CJK, Vietnamese, or Arabic-script transliteration and any Nordic/Germanic/Slavic/
+ *      Turkish diacritic Portuguese doesn't have ("ü", "ö", "ä", "å", "ø", "ß", "ł", "ż", "ń", "ř",
+ *      "ě", "ğ", "ş", "ı", "æ", "þ", "ð", etc.), all in one shot instead of enumerating letters.
+ *    - uses the digraphs "zh", "sch", "cz" or "sz" - these romanize Chinese Pinyin, German or
+ *      Polish/Hungarian sounds respectively using only plain Latin letters (so the alphabet check
+ *      above can't catch them), but none of the four combinations occurs in Portuguese.
  */
 object TraditionalNameRules {
 
     private val EXCLUDED_LETTERS = setOf('k', 'y', 'w')
-    private val EXCLUDED_DIGRAPHS = listOf("ph", "th", "sh", "tz")
+    private val EXCLUDED_DIGRAPHS = listOf("ph", "th", "sh", "tz", "zh", "sch", "cz", "sz")
     private val VOWELS = setOf('a', 'e', 'i', 'o', 'u', 'á', 'à', 'â', 'ã', 'é', 'ê', 'í', 'ó', 'ô', 'õ', 'ú')
     private val CONSONANTS = "bcdfghjlmnpqrstvxz".toSet()
     private val NATIVE_DOUBLED_CONSONANTS = setOf('r', 's')
     private val VALID_FINAL_CONSONANTS = setOf('l', 'r', 's', 'z', 'm', 'n')
+    private val PORTUGUESE_ALPHABET =
+        ('a'..'z').toSet() + setOf('á', 'à', 'â', 'ã', 'é', 'ê', 'í', 'ó', 'ô', 'õ', 'ú', 'ç', '-')
 
     private val CURATED_TRADITIONAL_NAMES: Set<String> = setOf(
         // Male
@@ -87,6 +98,7 @@ object TraditionalNameRules {
         val normalized = name.lowercase()
         if (normalized in CURATED_TRADITIONAL_NAMES) return true
         if (normalized.startsWith("abd")) return false
+        if (normalized.any { it !in PORTUGUESE_ALPHABET }) return false
         if (normalized.any { it in EXCLUDED_LETTERS }) return false
         if (EXCLUDED_DIGRAPHS.any { normalized.contains(it) }) return false
         if (normalized.indices.any { i -> normalized[i] == 'q' && normalized.getOrNull(i + 1) != 'u' }) return false
