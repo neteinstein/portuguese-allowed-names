@@ -1,6 +1,7 @@
 package org.neteinstein.pickaname.data.repository
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import org.neteinstein.pickaname.data.local.database.NameDao
 import org.neteinstein.pickaname.data.mapper.toDomain
@@ -15,15 +16,26 @@ class NameRepositoryImpl(
     private val nameDao: NameDao
 ) : NameRepository {
 
-    override fun observeNames(filter: NameFilter): Flow<List<NameEntry>> =
-        nameDao.observeNames(
+    override fun observeNames(filter: NameFilter): Flow<List<NameEntry>> {
+        val entitiesFlow = nameDao.observeNames(
             gender = filter.gender?.toEntityCode(),
             initial = filter.initial?.let { "$it".toFilterInitial() },
             query = filter.query.trim().ifBlank { null }
-        ).map { entities -> entities.map { it.toDomain() }.applyTraditionalOnly(filter.traditionalOnly) }
+        )
+        // TraditionalNameRules' phonotactic checks aren't expressible as SQL, so traditionalOnly
+        // is applied in-memory; the both-genders cross-reference is only fetched when it's active.
+        return if (filter.traditionalOnly) {
+            combine(entitiesFlow, nameDao.observeNamesUsedByBothGenders()) { entities, bothGenderNames ->
+                val bothGenderSet = bothGenderNames.toHashSet()
+                entities.map { it.toDomain() }.filter {
+                    TraditionalNameRules.isTraditional(it.name, isUsedByBothGenders = it.name in bothGenderSet)
+                }
+            }
+        } else {
+            entitiesFlow.map { entities -> entities.map { it.toDomain() } }
+        }
+    }
 
-    // TraditionalNameRules isn't expressible as SQL, so when it's active the count is derived
-    // from the same in-memory filtering as observeNames rather than from a DB COUNT(*) query.
     override fun observeNameCount(filter: NameFilter): Flow<Int> =
         if (filter.traditionalOnly) {
             observeNames(filter).map { it.size }
@@ -38,6 +50,3 @@ class NameRepositoryImpl(
     override fun observeIsEmpty(): Flow<Boolean> =
         nameDao.observeTotalCount().map { total -> total == 0 }
 }
-
-private fun List<NameEntry>.applyTraditionalOnly(enabled: Boolean): List<NameEntry> =
-    if (enabled) filter { TraditionalNameRules.isTraditional(it.name) } else this

@@ -39,6 +39,16 @@ interface NameDao {
     @Query("SELECT COUNT(*) FROM names")
     fun observeTotalCount(): Flow<Int>
 
+    /** Names registered under more than one gender value - used to flag likely-unisex names. */
+    @Query(
+        """
+        SELECT name FROM names
+        GROUP BY name
+        HAVING COUNT(DISTINCT gender) > 1
+        """
+    )
+    fun observeNamesUsedByBothGenders(): Flow<List<String>>
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(names: List<NameEntity>)
 

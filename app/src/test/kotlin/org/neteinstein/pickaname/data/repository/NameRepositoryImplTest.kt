@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -22,6 +23,10 @@ class NameRepositoryImplTest {
     private val aliceEntry = NameEntry(id = 1, name = "Alice", gender = Gender.FEMALE)
     private val kevinEntity = NameEntity(id = 2, name = "Kevin", gender = "M", initialLetter = "K")
     private val kevinEntry = NameEntry(id = 2, name = "Kevin", gender = Gender.MALE)
+
+    // Passes every phonotactic check and isn't in the curated allowlist, so it's traditional
+    // unless something else (like being used by both genders) says otherwise.
+    private val arianaEntity = NameEntity(id = 3, name = "Ariana", gender = "F", initialLetter = "A")
 
     @Test
     fun `observeNames passes an unrestricted filter through as all-null dao params`() = runTest {
@@ -73,6 +78,7 @@ class NameRepositoryImplTest {
     fun `observeNames excludes non-traditional names when traditionalOnly is enabled`() = runTest {
         every { nameDao.observeNames(gender = null, initial = null, query = null) } returns
             flowOf(listOf(aliceEntity, kevinEntity))
+        every { nameDao.observeNamesUsedByBothGenders() } returns flowOf(emptyList())
 
         repository.observeNames(NameFilter(traditionalOnly = true)).test {
             assertThat(awaitItem()).containsExactly(aliceEntry)
@@ -81,20 +87,48 @@ class NameRepositoryImplTest {
     }
 
     @Test
-    fun `observeNames keeps all names when traditionalOnly is disabled`() = runTest {
+    fun `observeNames excludes a name used by both genders when traditionalOnly is enabled`() = runTest {
         every { nameDao.observeNames(gender = null, initial = null, query = null) } returns
-            flowOf(listOf(aliceEntity, kevinEntity))
+            flowOf(listOf(arianaEntity))
+        every { nameDao.observeNamesUsedByBothGenders() } returns flowOf(listOf("Ariana"))
 
-        repository.observeNames(NameFilter(traditionalOnly = false)).test {
-            assertThat(awaitItem()).containsExactly(aliceEntry, kevinEntry)
+        repository.observeNames(NameFilter(traditionalOnly = true)).test {
+            assertThat(awaitItem()).isEmpty()
             awaitComplete()
         }
     }
 
     @Test
+    fun `observeNames keeps a curated name traditional even if used by both genders`() = runTest {
+        every { nameDao.observeNames(gender = null, initial = null, query = null) } returns
+            flowOf(listOf(aliceEntity))
+        every { nameDao.observeNamesUsedByBothGenders() } returns flowOf(listOf("Alice"))
+
+        repository.observeNames(NameFilter(traditionalOnly = true)).test {
+            assertThat(awaitItem()).containsExactly(aliceEntry)
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun `observeNames keeps all names and never queries both-genders names when traditionalOnly is disabled`() =
+        runTest {
+            every { nameDao.observeNames(gender = null, initial = null, query = null) } returns
+                flowOf(listOf(aliceEntity, kevinEntity))
+
+            repository.observeNames(NameFilter(traditionalOnly = false)).test {
+                assertThat(awaitItem()).containsExactly(aliceEntry, kevinEntry)
+                awaitComplete()
+            }
+
+            verify(exactly = 0) { nameDao.observeNamesUsedByBothGenders() }
+        }
+
+    @Test
     fun `observeNameCount derives its count from the traditional-only filtered list`() = runTest {
         every { nameDao.observeNames(gender = null, initial = null, query = null) } returns
             flowOf(listOf(aliceEntity, kevinEntity))
+        every { nameDao.observeNamesUsedByBothGenders() } returns flowOf(emptyList())
 
         repository.observeNameCount(NameFilter(traditionalOnly = true)).test {
             assertThat(awaitItem()).isEqualTo(1)

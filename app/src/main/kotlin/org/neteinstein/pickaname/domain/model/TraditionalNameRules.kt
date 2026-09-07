@@ -25,15 +25,49 @@ package org.neteinstein.pickaname.domain.model
  *      which are the only doubled letters Portuguese ever legitimately uses; doubled vowels
  *      ("aa", "ee") get no such exception. Comparison is by exact character, so an accented vowel
  *      is never conflated with its plain counterpart (e.g. "ã" next to "a" isn't a repeat).
+ *    - starts with "abd", "moham", "muham" or "abu" - Arabic patronymic/theophoric name-formation
+ *      prefixes ("servant of", the "Muhammad"/"Mohamed" family, and "father of", as in "Abdel",
+ *      "Mohamade", "Abubacar"). These compounds are spelled with letters Portuguese itself uses,
+ *      so they pass every phonotactic check above, but the prefixes themselves have no Portuguese
+ *      equivalent. Verified against the full official IRN name list: every name sharing one of
+ *      these prefixes is Arabic in origin, with zero unrelated matches.
+ *    - uses a letter outside the Portuguese alphabet, i.e. anything other than "a"-"z", the
+ *      hyphen (needed for legitimate compound names like "Maria-João"), and the accented letters
+ *      "áàâãéêíóôõúç". This is what actually catches most non-Portuguese names: it rejects any
+ *      Cyrillic, CJK, Vietnamese, or Arabic-script transliteration and any Nordic/Germanic/Slavic/
+ *      Turkish diacritic Portuguese doesn't have ("ü", "ö", "ä", "å", "ø", "ß", "ł", "ż", "ń", "ř",
+ *      "ě", "ğ", "ş", "ı", "æ", "þ", "ð", etc.), all in one shot instead of enumerating letters.
+ *    - uses the digraphs "zh", "sch", "cz" or "sz" - these romanize Chinese Pinyin, German or
+ *      Polish/Hungarian sounds respectively using only plain Latin letters (so the alphabet check
+ *      above can't catch them), but none of the four combinations occurs in Portuguese.
+ *    - is reported by the caller (via [isTraditional]'s `isUsedByBothGenders` parameter) as
+ *      registered for both sexes in the official name list. Portuguese given names are strongly
+ *      gender-marked by ending (the final "-o"/"-a"
+ *      contrast and its exceptions are all fixed per name), so a name legally usable by either
+ *      sex is a strong signal it's an international import (e.g. "Ashley", "Noah", "Sasha") rather
+ *      than a traditional Portuguese one. A curated name always wins over this signal: a handful
+ *      of classics (e.g. "Carlos", "Joaquim") are, surprisingly, also registered for the other sex
+ *      in rare cases, and that shouldn't strip their traditional status.
+ *    - matches an entry in [NON_PORTUGUESE_GIVEN_NAMES] - specific Arabic-origin given names
+ *      (e.g. "Hassan", "Ibrahim", "Mustafa") verified present in the official list that don't share
+ *      a common prefix/spelling irregularity, so no mechanical rule above catches them.
  */
 object TraditionalNameRules {
 
     private val EXCLUDED_LETTERS = setOf('k', 'y', 'w')
-    private val EXCLUDED_DIGRAPHS = listOf("ph", "th", "sh", "tz")
+    private val EXCLUDED_DIGRAPHS = listOf("ph", "th", "sh", "tz", "zh", "sch", "cz", "sz")
+    private val EXCLUDED_PREFIXES = listOf("abd", "moham", "muham", "abu")
     private val VOWELS = setOf('a', 'e', 'i', 'o', 'u', 'á', 'à', 'â', 'ã', 'é', 'ê', 'í', 'ó', 'ô', 'õ', 'ú')
     private val CONSONANTS = "bcdfghjlmnpqrstvxz".toSet()
     private val NATIVE_DOUBLED_CONSONANTS = setOf('r', 's')
     private val VALID_FINAL_CONSONANTS = setOf('l', 'r', 's', 'z', 'm', 'n')
+    private val PORTUGUESE_ALPHABET =
+        ('a'..'z').toSet() + setOf('á', 'à', 'â', 'ã', 'é', 'ê', 'í', 'ó', 'ô', 'õ', 'ú', 'ç', '-')
+
+    private val NON_PORTUGUESE_GIVEN_NAMES: Set<String> = setOf(
+        "Hassan", "Hussain", "Ibrahim", "Ibrahima", "Mustafa", "Nabil", "Samir", "Nasser",
+        "Sultan", "Bilal", "Rassan", "Omar", "Amir"
+    ).map { it.lowercase() }.toSet()
 
     private val CURATED_TRADITIONAL_NAMES: Set<String> = setOf(
         // Male
@@ -79,9 +113,18 @@ object TraditionalNameRules {
         "Teresa", "Umbelina", "Urraca", "Valentina", "Vera", "Vitória", "Zulmira"
     ).map { it.lowercase() }.toSet()
 
-    fun isTraditional(name: String): Boolean {
+    /**
+     * @param isUsedByBothGenders whether [name] is registered for both sexes in the official
+     *   name list the caller loaded it from. Defaults to `false` for callers (and tests) that
+     *   don't have that cross-referenced information available.
+     */
+    fun isTraditional(name: String, isUsedByBothGenders: Boolean = false): Boolean {
         val normalized = name.lowercase()
         if (normalized in CURATED_TRADITIONAL_NAMES) return true
+        if (isUsedByBothGenders) return false
+        if (normalized in NON_PORTUGUESE_GIVEN_NAMES) return false
+        if (EXCLUDED_PREFIXES.any { normalized.startsWith(it) }) return false
+        if (normalized.any { it !in PORTUGUESE_ALPHABET }) return false
         if (normalized.any { it in EXCLUDED_LETTERS }) return false
         if (EXCLUDED_DIGRAPHS.any { normalized.contains(it) }) return false
         if (normalized.indices.any { i -> normalized[i] == 'q' && normalized.getOrNull(i + 1) != 'u' }) return false
