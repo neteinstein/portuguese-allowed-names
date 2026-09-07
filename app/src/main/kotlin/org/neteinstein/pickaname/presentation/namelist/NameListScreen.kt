@@ -176,7 +176,7 @@ fun NameListScreen(
         RandomNameDialog(
             entry = entry,
             onDismiss = { randomlyPickedName = null },
-            onLongPress = {
+            onOpenMeaning = {
                 randomlyPickedName = null
                 if (canLoadWebView(context)) {
                     nameMeaningSearch = entry
@@ -322,7 +322,7 @@ fun NameListScreen(
                                 NameRow(
                                     entry = entry,
                                     modifier = Modifier.animateItem(),
-                                    onLongPress = {
+                                    onOpenMeaning = {
                                         if (canLoadWebView(context)) {
                                             nameMeaningSearch = entry
                                         } else {
@@ -932,7 +932,7 @@ private fun LetterFastScroller(
 }
 
 @Composable
-private fun NameRow(entry: NameEntry, onLongPress: () -> Unit, modifier: Modifier = Modifier) {
+private fun NameRow(entry: NameEntry, onOpenMeaning: () -> Unit, modifier: Modifier = Modifier) {
     val extendedColors = PickANameTheme.extendedColors
     val (avatarContainer, avatarContent) = genderAvatarColors(entry.gender, extendedColors)
     val haptics = LocalHapticFeedback.current
@@ -951,10 +951,10 @@ private fun NameRow(entry: NameEntry, onLongPress: () -> Unit, modifier: Modifie
                 // its rounded corners instead of spilling past them as a square.
                 .clip(shape)
                 .combinedClickable(
-                    onClick = {},
+                    onClick = onOpenMeaning,
                     onLongClick = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onLongPress()
+                        onOpenMeaning()
                     }
                 )
                 .padding(horizontal = 12.dp, vertical = 10.dp),
@@ -997,12 +997,12 @@ private fun genderAvatarColors(
  * Full-screen overlay showing the dice's pick, celebrated with looping firework bursts behind
  * it. Backed by [Dialog] so the system back button dismisses it for free; tapping the scrim
  * (anywhere outside the card) dismisses it too, while a tap on the card itself is consumed so it
- * doesn't propagate to the scrim underneath it. Long-pressing the card behaves just like
- * long-pressing a name in the list: it dismisses this overlay and triggers [onLongPress]'s
+ * doesn't propagate to the scrim underneath it. Tapping (or long-pressing) the card behaves just
+ * like tapping a name in the list: it dismisses this overlay and triggers [onOpenMeaning]'s
  * meaning search.
  */
 @Composable
-private fun RandomNameDialog(entry: NameEntry, onDismiss: () -> Unit, onLongPress: () -> Unit) {
+private fun RandomNameDialog(entry: NameEntry, onDismiss: () -> Unit, onOpenMeaning: () -> Unit) {
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -1019,13 +1019,13 @@ private fun RandomNameDialog(entry: NameEntry, onDismiss: () -> Unit, onLongPres
             contentAlignment = Alignment.Center
         ) {
             FireworksOverlay(modifier = Modifier.fillMaxSize())
-            RandomNameCard(entry = entry, onLongPress = onLongPress)
+            RandomNameCard(entry = entry, onOpenMeaning = onOpenMeaning)
         }
     }
 }
 
 @Composable
-private fun RandomNameCard(entry: NameEntry, onLongPress: () -> Unit) {
+private fun RandomNameCard(entry: NameEntry, onOpenMeaning: () -> Unit) {
     val extendedColors = PickANameTheme.extendedColors
     val (avatarContainer, avatarContent) = genderAvatarColors(entry.gender, extendedColors)
     val haptics = LocalHapticFeedback.current
@@ -1033,15 +1033,16 @@ private fun RandomNameCard(entry: NameEntry, onLongPress: () -> Unit) {
 
     Card(
         // Consumes its own taps so tapping the card doesn't fall through to the scrim behind it;
-        // long-pressing triggers the same meaning search a long-press in the list would. Clipped
-        // to its own shape so the (default, radial) ripple stays bounded to the rounded corners.
+        // both a tap and a long-press trigger the same meaning search a tap in the list would.
+        // Clipped to its own shape so the (default, radial) ripple stays bounded to the rounded
+        // corners.
         modifier = Modifier
             .clip(shape)
             .combinedClickable(
-                onClick = {},
+                onClick = onOpenMeaning,
                 onLongClick = {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onLongPress()
+                    onOpenMeaning()
                 }
             ),
         shape = shape,
