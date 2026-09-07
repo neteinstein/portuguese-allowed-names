@@ -143,4 +143,50 @@ class TraditionalNameRulesTest {
     fun `a hyphenated compound name spelled entirely in Portuguese is still traditional`() {
         assertThat(TraditionalNameRules.isTraditional("Maria-João")).isTrue()
     }
+
+    @Test
+    fun `names starting with moham, muham or abu are not traditional`() {
+        assertThat(TraditionalNameRules.isTraditional("Mohamed")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Mohammad")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Muhammad")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Abubacar")).isFalse()
+    }
+
+    @Test
+    fun `specific known non-Portuguese given names are not traditional`() {
+        assertThat(TraditionalNameRules.isTraditional("Hassan")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Hussain")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Ibrahim")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Ibrahima")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Mustafa")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Nabil")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Samir")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Nasser")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Sultan")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Bilal")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Rassan")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Omar")).isFalse()
+        assertThat(TraditionalNameRules.isTraditional("Amir")).isFalse()
+    }
+
+    @Test
+    fun `the non-Portuguese given name denylist is case-insensitive`() {
+        assertThat(TraditionalNameRules.isTraditional("HASSAN")).isFalse()
+    }
+
+    @Test
+    fun `a name used by both genders is not traditional`() {
+        assertThat(TraditionalNameRules.isTraditional("Ashley", isUsedByBothGenders = true)).isFalse()
+    }
+
+    @Test
+    fun `a name not used by both genders is unaffected by the parameter`() {
+        assertThat(TraditionalNameRules.isTraditional("Marina", isUsedByBothGenders = false)).isTrue()
+    }
+
+    @Test
+    fun `a curated traditional name stays traditional even if used by both genders`() {
+        assertThat(TraditionalNameRules.isTraditional("Carlos", isUsedByBothGenders = true)).isTrue()
+        assertThat(TraditionalNameRules.isTraditional("Joaquim", isUsedByBothGenders = true)).isTrue()
+    }
 }
