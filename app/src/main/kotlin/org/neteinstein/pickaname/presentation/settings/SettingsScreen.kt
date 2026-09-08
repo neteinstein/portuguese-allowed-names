@@ -10,6 +10,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -71,6 +72,9 @@ import org.neteinstein.pickaname.domain.model.SearchEngine
  * resetting the URL fires [SettingsEvent.SourceUpdated], which the caller uses to navigate to the
  * sync screen (re-downloading and re-parsing with the new source); the search engine and refresh
  * cadence both apply immediately on selection since neither needs a resync.
+ *
+ * The search engine section is hidden by default and only revealed for the current screen
+ * visit after the top bar title is tapped 10 times, since most users never need to change it.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,13 +97,22 @@ fun SettingsScreen(
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
 
+    var titleTapCount by remember { mutableStateOf(0) }
+    var searchEngineSectionVisible by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
                         text = stringResource(R.string.settings_title),
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.clickable {
+                            titleTapCount++
+                            if (titleTapCount >= 10) {
+                                searchEngineSectionVisible = true
+                            }
+                        }
                     )
                 },
                 navigationIcon = {
@@ -141,18 +154,20 @@ fun SettingsScreen(
                     }
                 }
 
-                SettingsSectionCard(
-                    icon = Icons.Filled.Search,
-                    title = stringResource(R.string.settings_search_engine_section),
-                    description = stringResource(R.string.settings_search_engine_description)
-                ) {
-                    EnumDropdown(
-                        selected = uiState.searchEngine,
-                        options = SearchEngine.entries,
-                        label = stringResource(R.string.settings_search_engine_label),
-                        optionLabel = { stringResource(it.labelRes()) },
-                        onSelected = viewModel::onSearchEngineSelected
-                    )
+                if (searchEngineSectionVisible) {
+                    SettingsSectionCard(
+                        icon = Icons.Filled.Search,
+                        title = stringResource(R.string.settings_search_engine_section),
+                        description = stringResource(R.string.settings_search_engine_description)
+                    ) {
+                        EnumDropdown(
+                            selected = uiState.searchEngine,
+                            options = SearchEngine.entries,
+                            label = stringResource(R.string.settings_search_engine_label),
+                            optionLabel = { stringResource(it.labelRes()) },
+                            onSelected = viewModel::onSearchEngineSelected
+                        )
+                    }
                 }
 
                 SettingsSectionCard(
