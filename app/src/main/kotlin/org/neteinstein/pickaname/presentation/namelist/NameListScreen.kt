@@ -111,6 +111,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
+import androidx.core.view.doOnLayout
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import org.neteinstein.pickaname.R
@@ -673,6 +674,10 @@ private fun NameMeaningBottomSheetContent(entry: NameEntry, searchEngine: Search
                 WebView(ctx).apply {
                     setBackgroundColor(android.graphics.Color.WHITE)
                     settings.javaScriptEnabled = true
+                    // Modern search result pages (e.g. DuckDuckGo's AI chat answer) use
+                    // localStorage/sessionStorage during their own startup; without this they throw
+                    // and can fail to render at all.
+                    settings.domStorageEnabled = true
                     // Chromium composites the WebView's frames on its own render thread and
                     // delivers them asynchronously; invalidating on every loading progress tick
                     // keeps pulling each newly composited frame onto the screen as it arrives,
@@ -694,7 +699,13 @@ private fun NameMeaningBottomSheetContent(entry: NameEntry, searchEngine: Search
                         view.parent?.requestDisallowInterceptTouchEvent(true)
                         false
                     }
-                    loadUrl(searchUrl)
+                    // Some pages read the viewport size while they first run (e.g. to size a
+                    // fixed-position layout) and never recompute it later; loading before this
+                    // WebView has been measured hands them a 0x0 viewport and leaves their layout
+                    // collapsed even after it's resized to its real bounds.
+                    doOnLayout {
+                        loadUrl(searchUrl)
+                    }
                 }
             }
         )
