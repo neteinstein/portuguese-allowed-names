@@ -555,6 +555,9 @@ private fun buildMeaningSearchUrl(context: Context, entry: NameEntry, engine: Se
         SearchEngine.DUCKDUCKGO -> "https://duckduckgo.com/".toUri().buildUpon()
             .appendQueryParameter("q", queryText)
             .appendQueryParameter("ia", "chat")
+
+        SearchEngine.BRAVE -> "https://search.brave.com/search".toUri().buildUpon()
+            .appendQueryParameter("q", queryText)
     }
     return builder.build().toString()
 }

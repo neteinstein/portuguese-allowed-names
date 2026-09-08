@@ -80,11 +80,11 @@ class SettingsRepositoryImplTest {
     }
 
     @Test
-    fun `observeSearchEngine defaults to duckduckgo when nothing is persisted yet`() = runTest {
+    fun `observeSearchEngine defaults to brave when nothing is persisted yet`() = runTest {
         val repository = SettingsRepositoryImpl(FakeDataStore())
 
         repository.observeSearchEngine().test {
-            assertThat(awaitItem()).isEqualTo(SearchEngine.DUCKDUCKGO)
+            assertThat(awaitItem()).isEqualTo(SearchEngine.BRAVE)
         }
     }
 
@@ -109,7 +109,7 @@ class SettingsRepositoryImplTest {
         val repository = SettingsRepositoryImpl(FakeDataStore())
 
         repository.observeSearchEngine().test {
-            assertThat(awaitItem()).isEqualTo(SearchEngine.DUCKDUCKGO)
+            assertThat(awaitItem()).isEqualTo(SearchEngine.BRAVE)
 
             repository.setSearchEngine(SearchEngine.GOOGLE)
 
