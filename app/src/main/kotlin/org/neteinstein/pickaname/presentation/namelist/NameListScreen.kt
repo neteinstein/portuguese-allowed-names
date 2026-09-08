@@ -3,13 +3,14 @@ package org.neteinstein.pickaname.presentation.namelist
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.view.View
-import android.view.ViewTreeObserver
+import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.compose.BackHandler
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -24,6 +25,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,6 +37,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -72,16 +75,17 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -107,6 +111,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
+import androidx.core.view.doOnLayout
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import org.neteinstein.pickaname.R
@@ -121,6 +126,7 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
+import kotlinx.coroutines.launch
 
 /**
  * Main screen: the full names list with gender/initial filters and a live match count. Reachable
@@ -187,168 +193,170 @@ fun NameListScreen(
         )
     }
 
-    nameMeaningSearch?.let { entry ->
-        // Skips the partially-expanded detent: the embedded WebView doesn't handle being resized
-        // mid-drag well (its content would blank out while dragging between detents), so the
-        // sheet opens straight at its full (85% of screen, see NameMeaningBottomSheetContent) size
-        // instead of animating there from a shorter one.
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(onDismissRequest = { nameMeaningSearch = null }, sheetState = sheetState) {
-            NameMeaningBottomSheetContent(entry = entry, searchEngine = searchEngine)
-        }
-    }
-
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        fontWeight = FontWeight.SemiBold
-                    )
-                },
-                actions = {
-                    IconButton(
-                        onClick = { randomlyPickedName = uiState.names.random() },
-                        enabled = uiState.names.isNotEmpty()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Casino,
-                            contentDescription = stringResource(R.string.cd_random_name_icon)
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = stringResource(R.string.app_name),
+                            fontWeight = FontWeight.SemiBold
                         )
-                    }
-                    IconButton(onClick = { showRulesSheet = true }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.HelpOutline,
-                            contentDescription = stringResource(R.string.cd_name_rules_icon)
-                        )
-                    }
-                    IconButton(onClick = onOpenSettings) {
-                        Icon(
-                            imageVector = Icons.Filled.Settings,
-                            contentDescription = stringResource(R.string.cd_settings_icon)
-                        )
-                    }
-                },
-                scrollBehavior = scrollBehavior
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            SearchField(
-                query = uiState.query,
-                onQueryChange = viewModel::onQueryChange
-            )
-
-            Text(
-                text = stringResource(R.string.filter_section_gender),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            GenderFilterRow(
-                selected = uiState.selectedGender,
-                onSelected = viewModel::onGenderSelected
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = stringResource(R.string.filter_section_other),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            OtherFiltersRow(
-                traditionalOnly = uiState.traditionalOnly,
-                onTraditionalOnlyChanged = viewModel::onTraditionalOnlyChanged,
-                onTraditionalNamesInfoClick = { showTraditionalNamesInfoSheet = true }
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = stringResource(R.string.filter_section_initial),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            InitialFilterRow(
-                selected = uiState.selectedInitial,
-                onSelected = viewModel::onInitialSelected
-            )
-
-            AnimatedContent(
-                targetState = uiState.count,
-                transitionSpec = { fadeIn(tween(150)) togetherWith fadeOut(tween(150)) },
-                label = "nameCount"
-            ) { count ->
-                Text(
-                    text = pluralStringResource(R.plurals.name_count, count, count),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = { randomlyPickedName = uiState.names.random() },
+                            enabled = uiState.names.isNotEmpty()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Casino,
+                                contentDescription = stringResource(R.string.cd_random_name_icon)
+                            )
+                        }
+                        IconButton(onClick = { showRulesSheet = true }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.HelpOutline,
+                                contentDescription = stringResource(R.string.cd_name_rules_icon)
+                            )
+                        }
+                        IconButton(onClick = onOpenSettings) {
+                            Icon(
+                                imageVector = Icons.Filled.Settings,
+                                contentDescription = stringResource(R.string.cd_settings_icon)
+                            )
+                        }
+                    },
+                    scrollBehavior = scrollBehavior
                 )
             }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                SearchField(
+                    query = uiState.query,
+                    onQueryChange = viewModel::onQueryChange
+                )
 
-            AnimatedContent(
-                targetState = uiState.names.isEmpty(),
-                transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(150)) },
-                label = "nameListContent",
-                modifier = Modifier.fillMaxSize()
-            ) { isEmpty ->
-                if (isEmpty) {
-                    EmptyState()
-                } else {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(
-                                start = 16.dp,
-                                top = 8.dp,
-                                end = if (showLetterScroller) 32.dp else 16.dp,
-                                bottom = 8.dp
-                            ),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(uiState.names, key = { it.id }) { entry ->
-                                NameRow(
-                                    entry = entry,
-                                    modifier = Modifier.animateItem(),
-                                    onOpenMeaning = {
-                                        if (canLoadWebView(context)) {
-                                            nameMeaningSearch = entry
-                                        } else {
-                                            openUrlInCustomTab(
-                                                context,
-                                                buildMeaningSearchUrl(context, entry, searchEngine)
-                                            )
+                Text(
+                    text = stringResource(R.string.filter_section_gender),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+                GenderFilterRow(
+                    selected = uiState.selectedGender,
+                    onSelected = viewModel::onGenderSelected
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = stringResource(R.string.filter_section_other),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+                OtherFiltersRow(
+                    traditionalOnly = uiState.traditionalOnly,
+                    onTraditionalOnlyChanged = viewModel::onTraditionalOnlyChanged,
+                    onTraditionalNamesInfoClick = { showTraditionalNamesInfoSheet = true }
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = stringResource(R.string.filter_section_initial),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+                InitialFilterRow(
+                    selected = uiState.selectedInitial,
+                    onSelected = viewModel::onInitialSelected
+                )
+
+                AnimatedContent(
+                    targetState = uiState.count,
+                    transitionSpec = { fadeIn(tween(150)) togetherWith fadeOut(tween(150)) },
+                    label = "nameCount"
+                ) { count ->
+                    Text(
+                        text = pluralStringResource(R.plurals.name_count, count, count),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+
+                AnimatedContent(
+                    targetState = uiState.names.isEmpty(),
+                    transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(150)) },
+                    label = "nameListContent",
+                    modifier = Modifier.fillMaxSize()
+                ) { isEmpty ->
+                    if (isEmpty) {
+                        EmptyState()
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            LazyColumn(
+                                state = listState,
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(
+                                    start = 16.dp,
+                                    top = 8.dp,
+                                    end = if (showLetterScroller) 32.dp else 16.dp,
+                                    bottom = 8.dp
+                                ),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(uiState.names, key = { it.id }) { entry ->
+                                    NameRow(
+                                        entry = entry,
+                                        modifier = Modifier.animateItem(),
+                                        onOpenMeaning = {
+                                            if (canLoadWebView(context)) {
+                                                nameMeaningSearch = entry
+                                            } else {
+                                                openUrlInCustomTab(
+                                                    context,
+                                                    buildMeaningSearchUrl(context, entry, searchEngine)
+                                                )
+                                            }
                                         }
-                                    }
+                                    )
+                                }
+                            }
+
+                            if (showLetterScroller) {
+                                LetterFastScroller(
+                                    letterIndex = letterIndex,
+                                    listState = listState,
+                                    modifier = Modifier
+                                        .align(Alignment.CenterEnd)
+                                        .fillMaxHeight()
                                 )
                             }
-                        }
-
-                        if (showLetterScroller) {
-                            LetterFastScroller(
-                                letterIndex = letterIndex,
-                                listState = listState,
-                                modifier = Modifier
-                                    .align(Alignment.CenterEnd)
-                                    .fillMaxHeight()
-                            )
                         }
                     }
                 }
             }
         }
+
+        // Rendered as a plain in-window overlay rather than a ModalBottomSheet: Compose's
+        // ModalBottomSheet hosts its content in a separate platform Window, and the embedded
+        // WebView's Chromium compositor frames never reliably land on screen there (see
+        // NameMeaningBottomSheetContent) - staying in this window's own surface is what makes the
+        // WebView paint normally.
+        NameMeaningOverlay(
+            entry = nameMeaningSearch,
+            searchEngine = searchEngine,
+            onDismiss = { nameMeaningSearch = null }
+        )
     }
 }
 
@@ -547,6 +555,9 @@ private fun buildMeaningSearchUrl(context: Context, entry: NameEntry, engine: Se
         SearchEngine.DUCKDUCKGO -> "https://duckduckgo.com/".toUri().buildUpon()
             .appendQueryParameter("q", queryText)
             .appendQueryParameter("ia", "chat")
+
+        SearchEngine.BRAVE -> "https://search.brave.com/search".toUri().buildUpon()
+            .appendQueryParameter("q", queryText)
     }
     return builder.build().toString()
 }
@@ -563,6 +574,89 @@ private fun canLoadWebView(context: Context): Boolean =
     } catch (e: Throwable) {
         false
     }
+
+/**
+ * Bottom sheet showing [entry]'s meaning, as a plain overlay in this screen's own window rather
+ * than a [androidx.compose.material3.ModalBottomSheet] - see [NameMeaningBottomSheetContent] for
+ * why the embedded WebView needs that. [entry] is null when the sheet should be hidden.
+ */
+@Composable
+private fun NameMeaningOverlay(entry: NameEntry?, searchEngine: SearchEngine, onDismiss: () -> Unit) {
+    // Keeps rendering the last looked-up name while the sheet fades out, instead of blanking
+    // the WebView the instant `entry` becomes null.
+    var lastEntry by remember { mutableStateOf<NameEntry?>(null) }
+    LaunchedEffect(entry) {
+        entry?.let { lastEntry = it }
+    }
+
+    BackHandler(enabled = entry != null, onBack = onDismiss)
+
+    AnimatedVisibility(visible = entry != null, enter = fadeIn(), exit = fadeOut()) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.32f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onDismiss
+                    )
+            )
+
+            val name = lastEntry ?: return@Box
+            val density = LocalDensity.current
+            val dismissThresholdPx = remember(density) { with(density) { 120.dp.toPx() } }
+            val dragOffset = remember { Animatable(0f) }
+            val coroutineScope = rememberCoroutineScope()
+
+            Surface(
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .offset { IntOffset(0, dragOffset.value.roundToInt()) }
+            ) {
+                Column {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .pointerInput(Unit) {
+                                detectVerticalDragGestures(
+                                    onVerticalDrag = { change, dragAmount ->
+                                        change.consume()
+                                        coroutineScope.launch {
+                                            dragOffset.snapTo((dragOffset.value + dragAmount).coerceAtLeast(0f))
+                                        }
+                                    },
+                                    onDragEnd = {
+                                        coroutineScope.launch {
+                                            if (dragOffset.value > dismissThresholdPx) {
+                                                onDismiss()
+                                            } else {
+                                                dragOffset.animateTo(0f)
+                                            }
+                                        }
+                                    }
+                                )
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .padding(vertical = 12.dp)
+                                .size(width = 32.dp, height = 4.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                        )
+                    }
+                    NameMeaningBottomSheetContent(entry = name, searchEngine = searchEngine)
+                }
+            }
+        }
+    }
+}
 
 /** Bottom sheet content: a search for [entry]'s meaning using [searchEngine], in an embedded WebView. */
 @Composable
@@ -581,17 +675,26 @@ private fun NameMeaningBottomSheetContent(entry: NameEntry, searchEngine: Search
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
                 WebView(ctx).apply {
-                    // ModalBottomSheet hosts its content in its own dialog window; a hardware-
-                    // accelerated WebView's compositor surface can attach to that window before
-                    // its first layout pass completes, leaving the WebView painting black until
-                    // something (e.g. a drag) forces a relayout. Software rendering avoids that
-                    // surface-sync race entirely.
-                    setLayerType(View.LAYER_TYPE_SOFTWARE, null)
                     setBackgroundColor(android.graphics.Color.WHITE)
                     settings.javaScriptEnabled = true
-                    // Keeps taps on search results loading inside this WebView instead of
-                    // spawning external intents, so exploring results stays in the sheet.
-                    webViewClient = WebViewClient()
+                    // Modern search result pages (e.g. DuckDuckGo's AI chat answer) use
+                    // localStorage/sessionStorage during their own startup; without this they throw
+                    // and can fail to render at all.
+                    settings.domStorageEnabled = true
+                    // Chromium composites the WebView's frames on its own render thread and
+                    // delivers them asynchronously; invalidating on every loading progress tick
+                    // keeps pulling each newly composited frame onto the screen as it arrives,
+                    // for the initial load and any in-sheet navigation to another result.
+                    webChromeClient = object : WebChromeClient() {
+                        override fun onProgressChanged(view: WebView, newProgress: Int) {
+                            view.invalidate()
+                        }
+                    }
+                    webViewClient = object : WebViewClient() {
+                        override fun onPageCommitVisible(view: WebView, url: String) {
+                            view.invalidate()
+                        }
+                    }
                     // Without this, the bottom sheet's own drag handling steals vertical swipes
                     // that start over the WebView, making it impossible to scroll the page inside
                     // it (e.g. to reach a cookie-consent button below the fold).
@@ -599,20 +702,13 @@ private fun NameMeaningBottomSheetContent(entry: NameEntry, searchEngine: Search
                         view.parent?.requestDisallowInterceptTouchEvent(true)
                         false
                     }
-                    loadUrl(searchUrl)
-
-                    // skipPartiallyExpanded means the sheet settles at its target size in one
-                    // step instead of resizing as the user drags - so unlike before, nothing
-                    // naturally forces the extra relayout the WebView needs to actually paint.
-                    // Requesting one manually once the dialog window's first layout pass
-                    // completes reproduces that same fix without requiring user interaction.
-                    viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
-                        override fun onGlobalLayout() {
-                            viewTreeObserver.removeOnGlobalLayoutListener(this)
-                            requestLayout()
-                            invalidate()
-                        }
-                    })
+                    // Some pages read the viewport size while they first run (e.g. to size a
+                    // fixed-position layout) and never recompute it later; loading before this
+                    // WebView has been measured hands them a 0x0 viewport and leaves their layout
+                    // collapsed even after it's resized to its real bounds.
+                    doOnLayout {
+                        loadUrl(searchUrl)
+                    }
                 }
             }
         )

@@ -312,6 +312,7 @@ private fun RefreshPeriod.labelRes(): Int = when (this) {
 private fun SearchEngine.labelRes(): Int = when (this) {
     SearchEngine.GOOGLE -> R.string.search_engine_google
     SearchEngine.DUCKDUCKGO -> R.string.search_engine_duckduckgo
+    SearchEngine.BRAVE -> R.string.search_engine_brave
 }
 
 private fun openAppLocaleSettings(context: Context) {

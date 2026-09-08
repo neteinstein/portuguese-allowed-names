@@ -87,10 +87,10 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `defaults the search engine to duckduckgo before it loads`() = runTest(mainDispatcherRule.dispatcher) {
+    fun `defaults the search engine to brave before it loads`() = runTest(mainDispatcherRule.dispatcher) {
         val viewModel = createViewModel()
 
-        assertThat(viewModel.uiState.value.searchEngine).isEqualTo(SearchEngine.DUCKDUCKGO)
+        assertThat(viewModel.uiState.value.searchEngine).isEqualTo(SearchEngine.BRAVE)
     }
 
     @Test
