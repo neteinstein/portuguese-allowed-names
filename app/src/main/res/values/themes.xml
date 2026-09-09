@@ -4,8 +4,6 @@
          window background flash before the first Compose frame is drawn. -->
     <style name="Theme.PickAName" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">#FFF7F9FC</item>
-        <item name="android:statusBarColor">#FF00599D</item>
-        <item name="android:windowLightStatusBar">false</item>
     </style>
 
     <!-- System splash screen (androidx.core.splashscreen), shown for the brief moment between
