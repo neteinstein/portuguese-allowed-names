@@ -2,8 +2,6 @@
 <resources>
     <style name="Theme.PickAName" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">#FF101418</item>
-        <item name="android:statusBarColor">#FF002E51</item>
-        <item name="android:windowLightStatusBar">false</item>
     </style>
 
     <!-- Same brand splash background in dark mode too — a splash screen is a transient, few
