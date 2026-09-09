@@ -41,7 +41,14 @@ android {
             if (project.hasProperty("android.injected.signing.store.file")) {
                 signingConfig = signingConfigs.getByName("release")
             }
-            isMinifyEnabled = false
+            // R8 in full mode (the AGP 8 default): shrinks, optimizes and obfuscates the code,
+            // which is what collapses the release build from 5 dex files down to 1 - fewer
+            // classes to verify and load means a faster cold start, on top of the smaller
+            // download. `isShrinkResources` then drops the resources that the shrunk code no
+            // longer references. Everything that is looked up by name at runtime is pinned in
+            // proguard-rules.pro; see that file for what and why.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
