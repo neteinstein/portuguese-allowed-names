@@ -38,6 +38,22 @@ carefully against known-good Kotlin Multiplatform/Compose Multiplatform/
 AGP conventions and validated via CI (GitHub Actions, which does have
 Google Maven access) after pushing, not locally beforehand.
 
+**First CI round on Phase 0 found two real issues**, both fixed in a
+follow-up commit:
+1. `settings.gradle.kts` had `repositoriesMode =
+   RepositoriesMode.FAIL_ON_PROJECT_REPOS`, which rejects the Kotlin
+   Multiplatform plugin's own Node.js-distribution repository that
+   `wasmJs` targets need — incompatible with having a wasmJs target at
+   all. Relaxed to `RepositoriesMode.PREFER_SETTINGS` (settings' repos
+   still take priority; project/plugin-added repos are allowed instead of
+   hard-failing).
+2. `composeMultiplatform = "1.12.0"` (latest stable at the time) pulls in
+   an Android runtime artifact that requires `compileSdk 37` + `AGP
+   9.1.0+` — newer than this repo's proven `agp = "8.13.2"` /
+   `compileSdk = 36` (shared with the shipping `:app` module, which this
+   migration deliberately doesn't touch). Pinned down to `1.8.2` instead
+   of bumping AGP/compileSdk project-wide to chase the latest release.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**
