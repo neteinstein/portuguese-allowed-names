@@ -7,24 +7,31 @@ current Android-only app.
 
 ## 1. Goal
 
-Turn Pick-A-Name from a single Android Gradle module into a Kotlin
-Multiplatform / Compose Multiplatform project, following the module shape
-used by [neteinstein/loopgain](https://github.com/neteinstein/loopgain)
-(shared `composeApp` module + thin per-platform app shells), extended with a
-**web target** (Compose Multiplatform for Web, Kotlin/Wasm) that deploys to
-**GitHub Pages**. Android stays the primary, fully-featured target; iOS is
-structured for from day one (loopgain's pattern) but is not this repo's
-priority since there's no iOS device/App Store presence today; web gets a
-real, working feature set, not just a demo shell.
+Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**
+Kotlin Multiplatform / Compose Multiplatform project, following the module
+shape used by [neteinstein/loopgain](https://github.com/neteinstein/loopgain)
+(a shared module + thin per-platform app shells) as the starting point, then
+going one step further than loopgain by splitting that shared module into
+per-feature and per-concern modules — loopgain's `composeApp` keeps
+`domain/data/ui` as packages inside one module; this app keeps them as
+**separate Gradle modules** so features can be built, tested, and reasoned
+about in isolation. On top of that, this project adds a **web target**
+(Compose Multiplatform for Web, Kotlin/Wasm) that deploys to **GitHub
+Pages** — something loopgain doesn't have at all. Android stays the
+primary, fully-featured target; iOS is structured for from day one
+(loopgain's pattern) but isn't built/tested in this pass; web gets a real,
+working feature set, not just a demo shell.
 
 ## 2. Current app, in one page
 
 - Single module: `app/`, package `org.neteinstein.pickaname`.
 - Clean-ish layered structure already: `domain` (pure Kotlin, verified zero
   `android.*` imports), `data`, `di` (Koin), `presentation` (Compose +
-  Navigation-Compose + ViewModel).
+  Navigation-Compose + ViewModel), with four screens/flows: **Splash**,
+  **Sync** (onboarding + re-sync), **NameList** (browse/search/filter, the
+  main screen), **Settings**.
 - What the app does: downloads a PDF of legally allowed Portuguese given
-  names, extracts its text, parses name/gender pairs, stores them in Room,
+  names, extracts its text, parses name/gender pairs, stores them locally,
   and lets the user browse/search/filter them. Settings let the user change
   the source URL, refresh cadence, and search engine used from "look this
   name up online" links.
@@ -44,143 +51,210 @@ real, working feature set, not just a demo shell.
 
 ## 3. Target module layout
 
-Follows loopgain's naming so the two repos stay easy to cross-reference:
-
 ```
 portuguese-allowed-names/
-├── composeApp/                  # shared KMP module (was `app/`)
-│   ├── src/
-│   │   ├── commonMain/kotlin/org/neteinstein/pickaname/
-│   │   │   ├── domain/          # unchanged, moved as-is (already pure Kotlin)
-│   │   │   ├── data/            # repositories + mappers, using expect/actual for I/O
-│   │   │   ├── di/              # Koin modules, common bindings
-│   │   │   └── ui/              # screens, components, theme, nav, viewmodels
-│   │   │       (renamed from `presentation/` to match loopgain's `ui/`)
-│   │   ├── commonTest/kotlin/…  # parser/mapper/usecase tests (pure Kotlin today, move as-is)
-│   │   ├── androidMain/kotlin/… # Android actuals: Room/SQLite driver, DataStore, OkHttp
-│   │   │                        # engine, PdfBox-Android extractor, CCT browser launcher
-│   │   ├── wasmJsMain/kotlin/…  # Web actuals: Ktor-JS engine, IndexedDB/localStorage-backed
-│   │   │                        # settings + name store, pdf.js-backed extractor, window.open
-│   │   ├── iosMain/kotlin/…     # stubbed from day 1 (loopgain parity); not built/signed yet
-│   │   └── androidUnitTest, wasmJsTest/  # platform-specific test source sets as needed
+├── build-logic/                        # included build: Gradle convention plugins (see §3.2)
+│   └── convention/src/main/kotlin/…
+├── core/
+│   ├── model/            # NameEntry, Gender, RefreshPeriod, SearchEngine, SyncOutcome, … — no deps
+│   ├── domain/           # repository interfaces + use cases — depends only on :core:model
+│   ├── network/          # Ktor client + NameListRemoteDataSource (expect/actual engine per platform)
+│   ├── database/         # NameStore contract; Room actual (Android), IndexedDB-backed actual (web)
+│   ├── datastore/        # SettingsRepositoryImpl on multiplatform-settings
+│   ├── parser/           # PdfTextExtractor (expect/actual) + NameListTextParser (pure, unchanged)
+│   ├── designsystem/     # theme, colors, typography, shapes, gradients, GenderTag, shared composables
+│   └── navigation/       # Routes + nav-transition contracts shared by every feature + the app shell
+├── feature/
+│   ├── splash/           # SplashScreen + SplashViewModel + its own Koin module
+│   ├── sync/             # SyncScreen + SyncViewModel + SyncOrigin + its own Koin module
+│   ├── namelist/         # NameListScreen + NameListViewModel + its own Koin module
+│   └── settings/         # SettingsScreen + SettingsViewModel + its own Koin module
+├── composeApp/           # app shell: the ONLY module allowed to depend on every feature module.
+│   │                     # Assembles PickANameNavHost from the feature modules' screens + routes,
+│   │                     # combines every module's Koin module, exposes the root App() composable.
 │   └── build.gradle.kts
-├── androidApp/                  # thin Android shell: MainActivity, manifest, launcher icons
-│   └── build.gradle.kts
-├── webApp/                      # wasmJs browser entry point: main.kt (ComposeViewport) + index.html
-│   └── build.gradle.kts          (or folded into composeApp's own wasmJs target — see §5.1)
-├── iosApp/                      # Xcode project shell (loopgain parity, deferred build-out)
-├── distribution/                # unchanged (Play Store listing metadata)
+├── androidApp/           # thin Android launcher: MainActivity, manifest, launcher icons → composeApp.App()
+├── webApp/               # wasmJs browser entry point: main.kt (ComposeViewport) + index.html → composeApp.App()
+├── iosApp/               # Xcode project shell (loopgain parity, deferred build-out)
+├── distribution/         # unchanged (Play Store listing metadata)
 ├── .github/workflows/
-│   ├── release.yml              # unchanged: Android signed release on merge to main
-│   ├── pr-checks.yml            # extended: also run commonTest + wasmJsBrowserTest
-│   └── deploy-web.yml           # NEW: build wasmJs distribution, deploy to GitHub Pages
-├── gradle/libs.versions.toml    # + Compose Multiplatform, Ktor, Koin (multiplatform artifacts),
-│                                #   multiplatform-settings, kotlinx-datetime, Room KMP
-└── settings.gradle.kts          # include(":composeApp", ":androidApp", ":webApp")
+│   ├── release.yml       # unchanged: Android signed release on merge to main
+│   ├── pr-checks.yml     # extended: runs commonTest across every module + wasmJsBrowserTest
+│   └── deploy-web.yml    # NEW: build wasmJs distribution, deploy to GitHub Pages
+├── gradle/libs.versions.toml  # + Compose Multiplatform, Ktor, Koin (multiplatform), multiplatform-settings
+└── settings.gradle.kts   # includes build-logic + every core/*, feature/*, and app module
 ```
 
-Whether the wasmJs entry point is its own `:webApp` module or just a
-`wasmJs { browser() }` target block inside `composeApp` is a style choice —
-loopgain doesn't need to answer it (Android/iOS only). This plan uses a
-**separate `:webApp` module** for a cleaner GitHub Pages build step (`./gradlew
-:webApp:wasmJsBrowserDistribution` produces exactly the static site, nothing
-else), mirroring how `:androidApp` is kept thin. If it proves unnecessary
-overhead once the web target is live, both can be collapsed later — that's a
-non-breaking follow-up.
+### 3.1 Module boundaries and dependency rules
+
+The whole point of going feature-modular is that Gradle *enforces* the
+boundaries the current single-module `presentation/` package only enforces
+by convention. Rules, in order of how much they buy:
+
+1. **A `feature/*` module never depends on another `feature/*` module.**
+   `feature:sync` cannot import anything from `feature:settings`, even
+   though the Sync screen currently navigates to Settings. Cross-feature
+   navigation is expressed as a **callback lambda + a route constant from
+   `core:navigation`** — exactly the pattern `PickANameNavHost` already uses
+   today (`onEditSource = { navController.navigate(Routes.SETTINGS) }`), so
+   this rule costs nothing to adopt, it just gets a compiler-enforced
+   guarantee on top of it.
+2. **`core/*` modules never depend on `feature/*` modules.** Dependencies
+   only point inward: `feature → core`, never the reverse. `core:domain`
+   depends only on `core:model`; `core:data`-equivalent modules
+   (`network`/`database`/`datastore`/`parser`) depend on `core:model` (and,
+   where they implement a repository interface, on `core:domain`); nothing
+   in `core/` ever needs to know a feature exists.
+3. **Only `composeApp` sees every module.** It's the single place that
+   assembles the nav graph and the full Koin dependency graph. This keeps
+   the "does everything" module intentionally thin (wiring only, no
+   business logic of its own) instead of letting the old `app` module's
+   role quietly turn into a god-module again.
+4. **Feature modules depend on `core:domain`, `core:designsystem`, and
+   `core:navigation` only — never directly on `core:network`/`database`/
+   `datastore`.** A `SettingsViewModel` calls `UpdateSourceUrlUseCase`, not
+   `SettingsRepositoryImpl` directly; Koin resolves the concrete
+   implementation at runtime. This is the same dependency-inversion the app
+   already has between `presentation` and `data` today, just drawn at a
+   module boundary instead of a package boundary.
+5. **`core:model` and `core:designsystem` have (almost) no dependencies on
+   each other or on anything else in the graph.** They're the leaves —
+   safe for every other module to depend on, and cheap for Gradle to
+   rebuild when something downstream changes.
+
+Enforcement isn't just aspirational: Gradle physically cannot compile a
+`feature:sync → feature:settings` dependency unless it's declared in
+`feature/sync/build.gradle.kts`, and code review only needs to check that
+new module dependency lines match the rules above, not chase package-level
+imports through a single module.
+
+### 3.2 Build-logic convention plugins
+
+Fourteen-ish modules each hand-writing their own `kotlin { androidTarget();
+wasmJs { browser() }; iosArm64(); … }` block plus repeated test-dependency
+wiring is exactly the kind of boilerplate that makes multi-module KMP
+projects painful. Mitigation: an included build `build-logic/` (same
+pattern as Google's Now in Android sample) providing a couple of Gradle
+convention plugins:
+
+- `pickaname.kmp.core` — applied by every `core/*` module: Kotlin
+  Multiplatform plugin, configures the android/wasmJs/iOS targets and
+  common test dependencies (`kotlin-test`, `kotlinx-coroutines-test`,
+  `turbine`, `truth`), no Compose.
+- `pickaname.kmp.feature` — applied by every `feature/*` module: everything
+  `pickaname.kmp.core` gives, plus the Compose Multiplatform plugin,
+  `koin-compose`, and a dependency on `core:designsystem` + `core:navigation`
+  (the two things literally every feature needs) so each feature's own
+  `build.gradle.kts` only has to list what's specific to it.
+- `pickaname.android.application` — applied by `androidApp` only:
+  `compileSdk`/`minSdk`/signing config, kept close to today's
+  `app/build.gradle.kts` `android {}` block.
+
+This turns each `core/*` and `feature/*` module's `build.gradle.kts` into
+roughly 5–10 lines (apply the convention plugin + list module-specific
+dependencies), which is what makes 14 modules maintainable instead of a
+copy-paste liability.
 
 ## 4. Dependency replacement map
 
-| Layer | Today | Target (common) | Android actual | Web (wasmJs) actual |
-|---|---|---|---|---|
-| DI | Koin (android artifacts) | `koin-core` + `koin-compose` (multiplatform) | `koin-android` for `androidContext()` | `koin-core` only |
-| Networking | OkHttp | `ktor-client-core` | `ktor-client-okhttp` | `ktor-client-js` (or `-wasm-js` engine) |
-| Settings | DataStore Preferences | `russhwolf/multiplatform-settings` (`Settings` interface) | `DataStoreSettings` or `SharedPreferencesSettings` | `StorageSettings` (browser `localStorage`) |
-| DB | Room + KSP | `Room` 2.7+ KMP with `RoomDatabase.Builder` in each `actual` | `Room` + bundled SQLite (`androidx.sqlite:sqlite-bundled`) — same as today | **No official Room wasmJs target yet.** Use a hand-rolled `expect class NameStore` backed by IndexedDB (via `kotlinx-browser`) storing the parsed name list as JSON; see §6 risk R1 |
-| PDF → text | `pdfbox-android` | `expect fun extractPdfText(bytes: ByteArray): String` | keep `pdfbox-android` (works today) | delegate to `pdf.js` loaded from a CDN via `external`/JS interop (see §6 risk R2) |
-| Navigation | `navigation-compose` (AndroidX) | `org.jetbrains.androidx.navigation:navigation-compose` (CMP multiplatform build of Navigation, API-compatible) | same | same |
-| "Open URL" | `androidx.browser` CCT | `expect fun openUrl(url: String)` | Custom Tabs intent | `window.open(url, "_blank")` |
-| Splash | `core-splashscreen` | n/a (common) | keep as Android-only, lives in `androidApp` | web has no splash concept — CSS loading state in `index.html` instead |
-| Coroutines | `kotlinx-coroutines-{core,android}` | `kotlinx-coroutines-core` | `+android` for `Dispatchers.Main` | ships its own `Dispatchers.Main` via `kotlinx-coroutines-core-wasm-js`, no extra artifact |
-| Persisted preferences keys, `RefreshPeriod`, `SearchEngine`, etc. | n/a | unchanged, pure Kotlin | — | — |
+| Layer | Today | Target (common) | Android actual | Web (wasmJs) actual | Lives in |
+|---|---|---|---|---|---|
+| DI | Koin (android artifacts) | `koin-core` + `koin-compose` (multiplatform) | `koin-android` for `androidContext()` | `koin-core` only | each module's own Koin module, combined in `composeApp` |
+| Networking | OkHttp | `ktor-client-core` | `ktor-client-okhttp` | `ktor-client-js` (or `-wasm-js` engine) | `core:network` |
+| Settings | DataStore Preferences | `russhwolf/multiplatform-settings` (`Settings` interface) | `DataStoreSettings` or `SharedPreferencesSettings` | `StorageSettings` (browser `localStorage`) | `core:datastore` |
+| DB | Room + KSP | `Room` 2.7+ KMP with `RoomDatabase.Builder` in each `actual` | `Room` + bundled SQLite (`androidx.sqlite:sqlite-bundled`) — same as today | **No official Room wasmJs target yet.** Hand-rolled `expect class NameStore` backed by IndexedDB; see §6 risk R1 | `core:database` |
+| PDF → text | `pdfbox-android` | `expect fun extractPdfText(bytes: ByteArray): String` | keep `pdfbox-android` (works today) | delegate to `pdf.js` via JS interop (see §6 risk R2) | `core:parser` |
+| Navigation | `navigation-compose` (AndroidX) | `org.jetbrains.androidx.navigation:navigation-compose` (CMP multiplatform build, API-compatible) | same | same | `core:navigation` (routes) + `composeApp` (graph assembly) |
+| "Open URL" | `androidx.browser` CCT | `expect fun openUrl(url: String)` | Custom Tabs intent | `window.open(url, "_blank")` | `core:navigation` (or a small `core:common`) |
+| Splash | `core-splashscreen` | n/a (common) | keep as Android-only, lives in `androidApp` | web has no splash concept — CSS loading state in `index.html` instead | `androidApp` only |
+| Coroutines | `kotlinx-coroutines-{core,android}` | `kotlinx-coroutines-core` | `+android` for `Dispatchers.Main` | ships its own `Dispatchers.Main`, no extra artifact | wherever needed |
 
 Room's official KMP support (`androidx.room:room-runtime` 2.7.0+) currently
 targets Android, JVM, and Kotlin/Native — **wasmJs is not on the supported
 target list**. This is the single biggest platform gap and is called out
-again in §6.
+again in §6 (R1).
 
 ## 5. Phased roadmap
 
 Each phase is its own PR against `claude/kmp-cmp-migration-plan-m6dlst` (or
 stacked branches off it), keeps the app buildable at every step, and is
 independently reviewable. Nothing merges to `main` until Phase 6 is signed
-off manually.
+off manually. Phases 1–2 deliberately stay **Android-only** so the
+modularization itself — the part with the widest blast radius — is proven
+out and kept regression-free before web platform work is layered on top.
 
-### Phase 0 — Scaffolding (this session)
-- Add `composeApp` KMP module (Android + wasmJs targets configured;
-  iosArm64/iosSimulatorArm64 targets declared but not fleshed out).
-- Move `settings.gradle.kts`, version catalog, root `build.gradle.kts` to
-  the new module list.
-- Move the **domain** layer into `commonMain` verbatim (it already has zero
-  Android imports — free win, validates the toolchain).
-- Add a placeholder shared `App()` composable + theme so Android and wasmJs
-  both build and show *something*, proving the Gradle/Compose Multiplatform
-  wiring end-to-end before any real feature is ported.
-- Stand up `deploy-web.yml` against that placeholder so the Pages pipeline
-  is validated early, independent of feature completeness.
+### Phase 0 — Build-logic + leaf modules
+- Add `build-logic/` with the convention plugins from §3.2.
+- Add `core:model`, `core:domain`, `core:designsystem`, `core:navigation` —
+  the leaf modules with no platform-specific code, so they're the cheapest
+  possible proof that the module graph and convention plugins actually
+  work.
+- Move the **domain** layer's models into `core:model` and its
+  repository-interfaces/use-cases into `core:domain` verbatim (already zero
+  Android imports — a free move).
+- Stand up `composeApp`/`androidApp`/`webApp` shells with a placeholder
+  `App()` so both targets build and show *something* end to end before any
+  real feature lands, and stand up `deploy-web.yml` against that
+  placeholder so the Pages pipeline is validated early.
 
-### Phase 1 — DI, settings, networking
-- Introduce `koin-core`/`koin-compose` multiplatform modules; keep
-  `koin-android` only in `androidMain` for `androidContext()`.
-- Replace DataStore with `multiplatform-settings`; port
-  `SettingsRepositoryImpl` to `commonMain` against the `Settings` interface.
-- Replace OkHttp with Ktor client behind the existing
-  `NameListRemoteDataSource` shape (same method signature, new
-  implementation), with per-platform engines.
+### Phase 1 — Core technical modules (Android actuals only)
+- `core:network` (Ktor, Android engine only for now), `core:datastore`
+  (multiplatform-settings, Android actual), `core:database` (Room, same
+  behavior as today), `core:parser` (PdfTextExtractor + NameListTextParser,
+  Android actual keeps `pdfbox-android`).
+- Repository implementations move alongside their data source into the
+  relevant `core:*` module (or a `core:data` module if keeping
+  implementations together reads better once written — decide when the
+  code is in front of us) and are wired into Koin.
+- Milestone: `androidApp` builds and runs with full feature parity to
+  today's `app` module, just restructured into modules — no web yet.
 
-### Phase 2 — PDF parsing + name storage
-- Introduce `expect fun extractPdfText(bytes: ByteArray): String` /
-  `actual` per platform (pdf.js on web — see risk R2).
-- Introduce a common `NameStore` abstraction so `data/repository` code
-  doesn't hard-depend on Room; `actual` implementations: Room on Android,
-  IndexedDB-backed store on web (risk R1).
-- `NameListTextParser` and mappers move to `commonMain` untouched (already
-  pure Kotlin, already unit-tested).
+### Phase 2 — Extract feature modules one at a time
+Each of the four extractions is its own reviewable PR, in this order
+(simplest/most self-contained first):
+1. `feature:settings`
+2. `feature:sync`
+3. `feature:namelist`
+4. `feature:splash`, plus moving `PickANameNavHost` assembly into
+   `composeApp`.
 
-### Phase 3 — UI port
-- Move `presentation/` → `commonMain/…/ui/`, replacing:
-  - `navigation-compose` → CMP's multiplatform Navigation artifact
-    (near-identical API, mostly import changes).
-  - `androidx.browser` CCT calls → `expect fun openUrl(url: String)`.
-  - Any `androidx.core.splashscreen` usage stays in `androidApp`'s
-    `MainActivity` only; the web target renders straight into `SplashScreen`
-    composable (loses the native pre-Compose flash, which doesn't exist on
-    web anyway).
+After each step the app stays fully working on Android — this phase is a
+pure refactor with no behavior change, which is what makes it safe to land
+incrementally instead of as one large "move everything" commit.
+
+### Phase 3 — Web actuals
+- `core:network`, `core:datastore`, `core:database`, `core:parser` each
+  gain a wasmJs `actual`: Ktor-JS engine, `localStorage`-backed settings,
+  IndexedDB-backed name store (R1), pdf.js-backed text extraction (R2).
+- Swap `navigation-compose` for CMP's multiplatform Navigation artifact in
+  `core:navigation`/`composeApp`; replace `androidx.browser` CCT calls with
+  the `expect fun openUrl(url: String)` actuals (Custom Tabs / `window.open`).
 - Verify Material3 theming, `GenderTag`, gradients, and typography all
-  render correctly on web through Compose Multiplatform Web resources
-  (font loading is the usual snag — confirm the app's fonts, if custom, load
-  via multiplatform resources, not Android `res/font`).
+  render correctly on web (font loading via Compose Multiplatform resources
+  is the usual snag).
 
 ### Phase 4 — Feature parity + web-specific UX
-- Wire the ported UI/data/domain stack together end to end in `webApp`.
+- Wire every feature module together end to end in `webApp`.
 - Add responsive layout tweaks where the current design assumed a phone
-  viewport (name list, settings sheet, sync screen) — CMP Web runs at
-  arbitrary window widths.
-- Decide the web sync story: since the target PDF fetch is cross-origin
-  (IRN's server), confirm CORS allows browser `fetch`/Ktor-JS requests; if
-  the source blocks browser-origin requests, document a fallback (e.g. a
-  tiny same-origin proxy function is out of scope for a static GitHub Pages
-  site — see risk R3) rather than silently shipping a broken sync on web.
+  viewport — CMP Web runs at arbitrary window widths.
+- Resolve the web sync/CORS question (R3): confirm the IRN PDF source
+  allows browser-origin `fetch`/Ktor-JS requests; if blocked, the web build
+  ships with the last synced snapshot and a clear "sync only works in the
+  Android app" message instead of a silently-broken button.
 
 ### Phase 5 — Test + CI parity
-- `commonTest` carries over parser/mapper/usecase tests unchanged.
-- Add `wasmJsTest` (Kotlin/Wasm test runner via headless Chrome, already
-  supported by the Compose Multiplatform Gradle plugin) for
-  platform-specific actuals (settings, PDF extraction JS interop).
-- Extend `pr-checks.yml` to run `:composeApp:testDebugUnitTest` (Android)
-  and `:composeApp:wasmJsBrowserTest` (web) on every PR.
+- `commonTest` in each `core`/`feature` module carries over the relevant
+  parser/mapper/usecase/viewmodel tests, now scoped to the module that owns
+  that code (smaller, faster test targets instead of one monolithic suite).
+- Add `wasmJsTest` (headless-Chrome Kotlin/Wasm test runner) for
+  platform-specific actuals.
+- Extend `pr-checks.yml` to run unit tests across every module (Android)
+  and `wasmJsBrowserTest` (web) on every PR, and add a lightweight
+  module-boundary check (e.g. a Gradle task that fails the build if a
+  `feature/*` module declares a dependency on another `feature/*` module)
+  so §3.1's rules don't erode silently over time.
 - Extend `deploy-web.yml` to run on every push to the migration branch so
-  the live Pages preview always reflects the latest state (safe: Pages
-  hosting a WIP build doesn't touch `main` or the Play Store pipeline).
+  the live Pages preview always reflects the latest state.
 
 ### Phase 6 — Stabilization + merge decision
 - Manual pass on a real device/browser matrix (Android phone, Chrome,
@@ -193,27 +267,27 @@ off manually.
 
 - **R1 — No official Room support for wasmJs.** Mitigation: a small
   hand-rolled common `NameStore` interface (`getAll()`, `replaceAll()`,
-  `observeCount()`) with a Room-backed Android `actual` and an
-  IndexedDB/JSON-in-`localStorage` web `actual`. Since the whole dataset is
-  only the names list (a few thousand short rows, replaced wholesale on
-  each sync, never queried relationally), this is a reasonable scope
-  reduction rather than a hack — revisit only if Room ships wasmJs support
-  upstream.
+  `observeCount()`) in `core:database`, with a Room-backed Android `actual`
+  and an IndexedDB/JSON-in-`localStorage` web `actual`. Since the whole
+  dataset is only the names list (a few thousand short rows, replaced
+  wholesale on each sync, never queried relationally), this is a reasonable
+  scope reduction rather than a hack — revisit only if Room ships wasmJs
+  support upstream.
 - **R2 — No native PDF library for Kotlin/Wasm.** Mitigation: JS interop
-  with `pdf.js` (`external` declarations + a `<script>` tag in
-  `index.html`), converting its extracted text into the same line-based
-  format `NameListTextParser` already expects, so the parser itself needs
-  zero changes. Fallback if pdf.js interop proves too fragile: parse a
-  pre-generated JSON snapshot of the names list shipped as a static web
-  asset, refreshed by an Android-side (or CI) job — document as a
-  degradation, not use silently.
+  with `pdf.js` in `core:parser`'s wasmJs `actual` (`external` declarations
+  + a `<script>` tag in `webApp/index.html`), converting its extracted text
+  into the same line-based format `NameListTextParser` already expects, so
+  the parser itself needs zero changes. Fallback if pdf.js interop proves
+  too fragile: parse a pre-generated JSON snapshot of the names list
+  shipped as a static web asset — document as a degradation, not use
+  silently.
 - **R3 — CORS on the IRN PDF source.** The current Android app sidesteps
   browser CORS entirely (native OkHttp call). A browser `fetch`/Ktor-JS
   call to the same URL may be blocked if the server doesn't send
   `Access-Control-Allow-Origin`. Verify early (Phase 4) with a manual
   `fetch()` from a browser console against the real source URL; if blocked,
-  the web build ships with the last synced snapshot and a clear "sync only
-  works in the Android app" message, rather than a silently-broken button.
+  ship the last synced snapshot with a clear message rather than a
+  silently-broken sync button on web.
 - **R4 — No iOS build/test environment in this session.** `iosMain`/`iosApp`
   are scaffolded per loopgain's layout for future parity but not compiled
   or tested here (no macOS/Xcode toolchain available in this remote
@@ -228,6 +302,13 @@ off manually.
   multi-MB. Acceptable for a hobby names-lookup tool, but `deploy-web.yml`
   should report the built artifact size on every deploy so growth is
   visible, not just merged into the repo silently over time.
+- **R7 — Module-count overhead.** Going from 1 module to ~14 (4 `core` +
+  4 `feature` + 4 app shells + `build-logic` + room to grow) adds Gradle
+  configuration time and more files to navigate. Mitigated by the
+  convention plugins in §3.2 (so per-module boilerplate stays tiny),
+  Gradle's configuration cache, and by not fragmenting further than §3's
+  layout — e.g. not splitting a feature's own UI/viewmodel into yet more
+  sub-modules unless a concrete pain point shows up later.
 
 ## 7. GitHub Pages deployment
 
@@ -258,3 +339,6 @@ off manually.
 - Does not change the app's product behavior/UX beyond what's forced by
   going multiplatform (e.g. CCT → `window.open` on web is a platform
   necessity, not a redesign).
+- Does not fragment modules further than §3's layout "just in case" — the
+  boundaries are drawn around the app's actual four features and its actual
+  technical concerns, not a generic template applied for its own sake.
