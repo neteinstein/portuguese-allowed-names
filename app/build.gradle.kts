@@ -82,6 +82,13 @@ android {
 }
 
 dependencies {
+    // KMP core modules (see MIGRATION_PLAN.md) - domain layer and design system now live here;
+    // package names are unchanged from before the move, so no import in this module's own
+    // source needed to change.
+    implementation(project(":core:model"))
+    implementation(project(":core:domain"))
+    implementation(project(":core:designsystem"))
+
     // Core Android dependencies
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

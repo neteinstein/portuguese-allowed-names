@@ -5,6 +5,39 @@ Status: **in progress, not merged to `main`**. All work happens on
 until the web + Android targets are verified stable side by side with the
 current Android-only app.
 
+**Phase 0 is implemented** (see §5): `core:model`, `core:domain`, and
+`core:designsystem` exist with the domain layer and theme moved over
+verbatim (same package names, so `:app`'s own source needed zero import
+changes — only its `build.gradle.kts` gained three `project(...)`
+dependencies); `composeApp`/`androidApp`/`webApp` exist with a placeholder
+`App()` proving the Android + wasmJs pipeline end to end; `deploy-web.yml`
+builds and publishes that placeholder to GitHub Pages. Two deliberate
+scope trims versus the original Phase 0 description below:
+
+- **`build-logic` convention plugins are deferred**, not added yet. With
+  only 3 leaf modules so far, hand-writing each `build.gradle.kts` against
+  the version catalog directly is less risk than also standing up an
+  included build; §3.2's convention-plugin design is revisited once
+  Phase 2's feature modules actually make the per-module boilerplate
+  repeat enough to be worth abstracting.
+- **`core:navigation` is deferred**, not added yet. The obvious first
+  content for it — today's `Routes.kt` — currently depends on
+  `SyncOrigin`, a Sync-feature type that hasn't moved yet; moving Routes
+  alone would either strand that dependency or force a premature Sync
+  move. It lands in Phase 3 alongside the real Navigation-Compose swap,
+  once there's real content ready for it rather than an empty module.
+
+**Known limitation of the sandbox this was implemented in**: outbound
+access to `dl.google.com` (Google's Maven repository, which serves the
+Android Gradle Plugin) is blocked by that environment's network policy —
+confirmed this blocks `./gradlew help` on the *pre-existing, untouched*
+`:app` module too, not just the new modules. Nothing Android-related
+(which, transitively, is every module here except a pure-JVM slice) could
+be locally configured or compiled while writing Phase 0; it was written
+carefully against known-good Kotlin Multiplatform/Compose Multiplatform/
+AGP conventions and validated via CI (GitHub Actions, which does have
+Google Maven access) after pushing, not locally beforehand.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**
