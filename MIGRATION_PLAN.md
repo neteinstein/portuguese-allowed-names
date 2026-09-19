@@ -71,6 +71,15 @@ color schemes — Material3 supplies its own computed defaults for them.
 The brand hex values stay defined in `Color.kt` for whenever this module
 moves to a Compose Multiplatform version whose Material3 has that API.
 
+**Third CI round**: `core:designsystem`/`composeApp` then compiled clean
+for wasmJs (confirms the Theme.kt fix); `webApp/main.kt`'s
+`ComposeViewport` call needed `@OptIn(ExperimentalComposeUiApi::class)` -
+it's still an experimental API in Compose Multiplatform 1.8.2. One
+unrelated infra flake also hit this round (Gradle wrapper zip download
+reset by peer, before any build code ran) - re-ran that job once per the
+usual flake handling, and it then got past that point cleanly, surfacing
+the real `ComposeViewport` issue above.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**

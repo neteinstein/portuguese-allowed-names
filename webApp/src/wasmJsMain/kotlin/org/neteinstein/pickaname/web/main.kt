@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+
 package org.neteinstein.pickaname.web
 
 import androidx.compose.ui.window.ComposeViewport
