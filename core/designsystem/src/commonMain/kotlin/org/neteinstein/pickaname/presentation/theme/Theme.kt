@@ -41,18 +41,6 @@ private val LightColors = lightColorScheme(
     surfaceContainer = LightSurfaceContainer,
     surfaceContainerHigh = LightSurfaceContainerHigh,
     surfaceContainerHighest = LightSurfaceContainerHighest,
-    primaryFixed = LightPrimaryFixed,
-    primaryFixedDim = LightPrimaryFixedDim,
-    onPrimaryFixed = LightOnPrimaryFixed,
-    onPrimaryFixedVariant = LightOnPrimaryFixedVariant,
-    secondaryFixed = LightSecondaryFixed,
-    secondaryFixedDim = LightSecondaryFixedDim,
-    onSecondaryFixed = LightOnSecondaryFixed,
-    onSecondaryFixedVariant = LightOnSecondaryFixedVariant,
-    tertiaryFixed = LightTertiaryFixed,
-    tertiaryFixedDim = LightTertiaryFixedDim,
-    onTertiaryFixed = LightOnTertiaryFixed,
-    onTertiaryFixedVariant = LightOnTertiaryFixedVariant,
     error = LightError,
     onError = LightOnError,
     errorContainer = LightErrorContainer,
@@ -91,18 +79,6 @@ private val DarkColors = darkColorScheme(
     surfaceContainer = DarkSurfaceContainer,
     surfaceContainerHigh = DarkSurfaceContainerHigh,
     surfaceContainerHighest = DarkSurfaceContainerHighest,
-    primaryFixed = DarkPrimaryFixed,
-    primaryFixedDim = DarkPrimaryFixedDim,
-    onPrimaryFixed = DarkOnPrimaryFixed,
-    onPrimaryFixedVariant = DarkOnPrimaryFixedVariant,
-    secondaryFixed = DarkSecondaryFixed,
-    secondaryFixedDim = DarkSecondaryFixedDim,
-    onSecondaryFixed = DarkOnSecondaryFixed,
-    onSecondaryFixedVariant = DarkOnSecondaryFixedVariant,
-    tertiaryFixed = DarkTertiaryFixed,
-    tertiaryFixedDim = DarkTertiaryFixedDim,
-    onTertiaryFixed = DarkOnTertiaryFixed,
-    onTertiaryFixedVariant = DarkOnTertiaryFixedVariant,
     error = DarkError,
     onError = DarkOnError,
     errorContainer = DarkErrorContainer,
@@ -161,10 +137,13 @@ object PickANameTheme {
  * App-wide Material3 theme, derived from the color palette of irn.justica.gov.pt — the
  * government site that publishes the official Portuguese first-names list this app surfaces.
  *
- * Every [androidx.compose.material3.ColorScheme] role is explicitly supplied (see Color.kt) so
- * no role silently falls back to Material's default baseline palette; the whole app — cards,
- * containers, nav surfaces, scrims — stays tinted to the IRN brand instead of mixing in stock
- * Material purple.
+ * Every [androidx.compose.material3.ColorScheme] role this module's Compose Multiplatform
+ * version exposes is explicitly supplied (see Color.kt) so it stays tinted to the IRN brand
+ * instead of mixing in stock Material purple. The newer "fixed" tier roles (primaryFixed and
+ * friends) aren't wired in here - Compose Multiplatform 1.8.2's bundled Material3 predates them
+ * - so those fall back to Material3's own computed defaults; the brand hex values for them still
+ * live in Color.kt, ready to wire back in once this module moves to a Compose Multiplatform
+ * version whose Material3 has that API.
  */
 @Composable
 fun PickANameTheme(

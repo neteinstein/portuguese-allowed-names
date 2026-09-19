@@ -58,6 +58,19 @@ follow-up commit:
    migration deliberately doesn't touch). Pinned down to `1.8.2` instead
    of bumping AGP/compileSdk project-wide to chase the latest release.
 
+**Second CI round found one more issue**, this time a real code fix rather
+than a version/config tweak: Compose Multiplatform 1.8.2's bundled
+Material3 predates the "fixed" color-role parameters (`primaryFixed`,
+`secondaryFixed`, etc.) that `Theme.kt` was passing to
+`lightColorScheme()`/`darkColorScheme()` — those parameters didn't exist
+in that Material3 API surface yet, so `core:designsystem` failed to
+compile. Rather than keep hunting for a Compose Multiplatform version that
+has both the fixed-role API *and* stays under the compileSdk 36/AGP 8.13.2
+ceiling (fragile either way), removed the fixed-role arguments from both
+color schemes — Material3 supplies its own computed defaults for them.
+The brand hex values stay defined in `Color.kt` for whenever this module
+moves to a Compose Multiplatform version whose Material3 has that API.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**
