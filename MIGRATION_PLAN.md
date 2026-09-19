@@ -44,9 +44,13 @@ follow-up commit:
    RepositoriesMode.FAIL_ON_PROJECT_REPOS`, which rejects the Kotlin
    Multiplatform plugin's own Node.js-distribution repository that
    `wasmJs` targets need — incompatible with having a wasmJs target at
-   all. Relaxed to `RepositoriesMode.PREFER_SETTINGS` (settings' repos
-   still take priority; project/plugin-added repos are allowed instead of
-   hard-failing).
+   all. First tried `RepositoriesMode.PREFER_SETTINGS`, which stops the
+   hard failure but turned out to silently *drop* the plugin's repo
+   instead of using it (so the `org.nodejs:node` lookup then 404'd
+   against `google()`/`mavenCentral()`, which don't carry that artifact
+   either). Landed on `RepositoriesMode.PREFER_PROJECT` instead — safe
+   here since nothing else in this build declares its own per-module
+   repositories, so it only ever affects that one plugin-added repo.
 2. `composeMultiplatform = "1.12.0"` (latest stable at the time) pulls in
    an Android runtime artifact that requires `compileSdk 37` + `AGP
    9.1.0+` — newer than this repo's proven `agp = "8.13.2"` /
