@@ -80,6 +80,60 @@ reset by peer, before any build code ran) - re-ran that job once per the
 usual flake handling, and it then got past that point cleanly, surfacing
 the real `ComposeViewport` issue above.
 
+Phase 0 finished green: Lint, Unit Tests, Build APK, Instrumented Tests,
+and the wasmJs build all passed. Only `Deploy to GitHub Pages` stayed red,
+for the documented reason (Settings → Pages → Source isn't set to "GitHub
+Actions" yet - a one-time manual step, not a bug).
+
+**Phase 1 is implemented**: `core:network`, `core:datastore`,
+`core:database`, `core:parser`, and `core:data` now hold the whole data
+layer, each an **Android-library-only** module for now (not KMP) — Ktor
+and multiplatform-settings are genuinely multiplatform already, but Room
+(risk R1) and pdfbox-android have no web story yet, so all five modules
+stay plain `com.android.library` until their web actuals land in Phase 3,
+rather than mixing KMP and non-KMP modules inconsistently across the data
+layer. `:app`'s own source needed zero import changes here either (same
+package-preservation approach as Phase 0) — only its `build.gradle.kts`
+and two DI files (`AppModule.kt`, `DataStoreModule.kt`) changed:
+- `NameListRemoteDataSource` (`core:network`): OkHttp → Ktor
+  (`ktor-client-okhttp` engine), tested with `ktor-client-mock` instead of
+  OkHttp's `MockWebServer`.
+- `SettingsRepositoryImpl` (`core:datastore`): DataStore Preferences →
+  `multiplatform-settings`'s `FlowSettings`, backed by
+  `SharedPreferencesSettings` on Android; tested against `MapSettings`
+  instead of an in-memory `DataStore` fake.
+- `AppDatabase`/`NameDao`/`NameEntity`/`NameRepositoryImpl` (`core:database`):
+  moved verbatim (Room's Android behavior is unchanged).
+- `PdfTextExtractor`/`NameListTextParser`/`ParsedName` (`core:parser`):
+  moved verbatim; `core:parser` exposes `pdfbox-android` as `api` since
+  `PickANameApplication` still calls `PDFBoxResourceLoader.init(context)`
+  directly at startup.
+- `NameSyncRepositoryImpl` + the `ParsedName → NameEntity` mapper
+  (`core:data`, the one module that legitimately depends on network +
+  parser + database together): moved with one real behavior-preserving
+  change — its network-failure `catch` no longer names `java.io.IOException`
+  specifically (not available outside JVM/Android targets, and this data
+  layer will need to run on wasmJs in Phase 3), it catches `Exception`
+  broadly instead after the `IllegalArgumentException` check, so the same
+  NETWORK/INVALID_SOURCE classification survives unchanged.
+- **Mapper split**: the original single `NameMappers.kt` bridged both
+  `NameEntity` (now in `core:database`) and `ParsedName` (now in
+  `core:parser`) — keeping it as one file would have made `core:database`
+  and `core:data` depend on each other in a cycle. Split into
+  `NameEntityMappers.kt` (`core:database`: `toEntityCode`/`toDomainGender`/
+  `toDomain`/`toFilterInitial`) and a slim `NameMappers.kt` (`core:data`:
+  just `ParsedName.toEntity()`, which calls into `core:database`'s mapper
+  functions since both keep the same `org.neteinstein.pickaname.data.mapper`
+  package name).
+- The leftover `domain`/`usecase` test files in `app/src/test` (testing
+  code that already moved to `core:model`/`core:domain` back in Phase 0)
+  are **not** relocated in this pass — deliberately deferred to keep this
+  push's diff focused on the data layer; they still pass today since
+  package names didn't change.
+
+Like Phase 0, none of this could be verified locally (same `dl.google.com`
+sandbox limitation) — written carefully, pushed, and validated via CI.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**
