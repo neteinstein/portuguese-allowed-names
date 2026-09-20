@@ -622,6 +622,57 @@ switching the app locale to `pt-PT` (`cmd locale set-app-locales`) shows the
 whole UI - list and settings screens - in Portuguese from
 `composeResources/values-pt`, plural included.
 
+**All four feature modules are now real KMP modules** (`androidTarget` +
+`wasmJs`), built on Compose Multiplatform rather than the androidx Compose
+BOM. The pieces that made this possible without rewriting the screens:
+- **JetBrains' multiplatform AndroidX builds** for lifecycle
+  (`org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose` /
+  `-runtime-compose`, 2.9.6) keep the same package names and APIs, so
+  `androidx.lifecycle.ViewModel`, `viewModelScope` and
+  `collectAsStateWithLifecycle` needed no import changes at all.
+- **Koin's multiplatform Compose artifacts**: `org.koin.androidx.compose.
+  koinViewModel` → `org.koin.compose.viewmodel.koinViewModel`. `:app`'s
+  `viewModelModule` already used `org.koin.core.module.dsl.viewModelOf`,
+  which is the multiplatform DSL, so the DI side is unchanged.
+- Note for anyone copying these build files: in Kotlin 2.3 a KMP source-set
+  block can't call `platform(...)` directly (KT-58759), it has to be
+  `project.dependencies.platform(libs.koin.bom)`.
+
+The genuinely platform-specific bits became `expect`/`actual` pairs, each
+with a real web answer rather than a stub:
+- `feature:settings` - `rememberAppLanguageSettingsLauncher()`: Android
+  hands off to the OS per-app language screen; web returns `null` and the
+  Settings screen **omits the language card entirely**, since a browser
+  page follows the browser's own language and a button there could do
+  nothing.
+- `feature:namelist` - `rememberExternalUrlOpener()` (Custom Tab →
+  `window.open(url, "_blank", "noopener")`), `isInAppBrowserSupported()`
+  and `InAppBrowser()`. The WebView-backed name-meaning sheet moved
+  wholesale into `androidMain`; on web `isInAppBrowserSupported()` is
+  **false on purpose** - search engines refuse to be framed
+  (`X-Frame-Options`/`frame-ancestors`), so the web build opens the search
+  in a new tab instead of an in-page panel that could only ever be blank.
+- `feature:namelist` - `PlatformBackHandler()`: `androidx.activity.compose.
+  BackHandler` on Android, a no-op on web (Compose Multiplatform 1.8.2 has
+  no common `BackHandler`, and hooking the browser's history button belongs
+  with the navigation step, not here).
+- `feature:splash` - no expect/actual needed: `SplashScreen` now takes a
+  `Painter` instead of an `@DrawableRes Int`, so it stays off any one
+  platform's resource system while keeping the "the splash doesn't know
+  which app it's branding" decision from Phase 2. `:app` passes
+  `painterResource(R.drawable.ic_launcher_foreground)`.
+
+Two API changes were forced by Compose Multiplatform 1.8.2's slightly older
+Material3: `ExposedDropdownMenuAnchorType` doesn't exist there yet
+(`MenuAnchorType` does), and `android.net.Uri.Builder` had to go - the
+meaning-search URL is now built with a small `encodeUrlQueryValue()` in
+common code.
+
+Verified on the emulator again after the conversion, since this touched the
+name-meaning path directly: tapping a name still opens the in-app WebView
+sheet, with the hand-rolled percent-encoding producing the same search URL
+(apostrophe included) the `Uri.Builder` did.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**

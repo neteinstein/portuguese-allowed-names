@@ -1,6 +1,7 @@
 package org.neteinstein.pickaname.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -44,7 +45,7 @@ fun PickANameNavHost(navController: NavHostController = rememberNavController())
                         popUpTo(Routes.SPLASH) { inclusive = true }
                     }
                 },
-                logoRes = R.drawable.ic_launcher_foreground
+                logo = painterResource(R.drawable.ic_launcher_foreground)
             )
         }
         composable(
