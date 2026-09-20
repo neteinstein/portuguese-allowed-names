@@ -1122,3 +1122,114 @@ unstated gap:
 - Does not fragment modules further than §3's layout "just in case" — the
   boundaries are drawn around the app's actual four features and its actual
   technical concerns, not a generic template applied for its own sake.
+
+## 9. Gaps in this plan, found while implementing Phase 3
+
+Things the phases above don't cover, written down as they surfaced rather
+than left implicit. Roughly in order of how much they'd hurt if ignored.
+
+### 9.1 CI cannot currently catch a broken web build - or a working build that dies at runtime
+
+`pr-checks.yml` runs lint, Android unit tests, the emulator suite and an
+APK build. It never builds wasmJs; `deploy-web.yml` does, but only *after*
+merge to `main`. Now that the web target is the real app rather than a
+placeholder, that gap means a PR can go green and break the site.
+
+Worse, a build check alone wouldn't have caught this phase's most expensive
+bug: the Compose version skew compiled perfectly and only failed when the
+page loaded (`IrLinkageError`). So Phase 5 needs **two** web checks, not
+one:
+- `:webApp:wasmJsBrowserDistribution` on every PR, plus the module
+  `wasmJsTest` suites (they run in headless Chrome on a CI runner the same
+  way they do locally);
+- a **runtime smoke check** that actually loads the built page in a browser
+  and fails on any uncaught exception. A `runComposeUiTest` in
+  `composeApp`'s `commonTest` that mounts `App()` would cover the same
+  class of failure and run on both targets.
+
+Until that exists, the `kotlin-js-store/` decision (§ gitignored today)
+can't be revisited either, since a lock mismatch would surface post-merge.
+
+### 9.2 `build-logic` convention plugins are now overdue
+
+Phase 0 deferred them with an explicit trigger: "once Phase 2's feature
+modules make the per-module boilerplate repeat enough to be worth
+abstracting". That threshold has passed - there are 15 modules, and the
+KMP ones' `build.gradle.kts` files are near-identical (same two targets,
+same `jvmTarget`, same `compileSdk`/`minSdk`, same Compose set). Three of
+them in this phase were written by copying another module's file. The next
+structural change (a new target, an AGP bump, a compileSdk bump) has to be
+made 15 times by hand.
+
+### 9.3 The settings-store swap silently dropped existing users' preferences
+
+Phase 1 moved `SettingsRepositoryImpl` from DataStore Preferences to
+multiplatform-settings backed by `SharedPreferencesSettings("pick_a_name_
+settings")`, with **no migration** from the old DataStore file. For anyone
+who already had the app installed, that resets the configured source URL,
+the refresh period and the last-refresh timestamp to defaults on first
+launch after the update (the reset timestamp also forces one extra sync).
+
+This already shipped (it went to `main` before this branch), so it can't be
+prevented now - but it should be recorded rather than discovered later from
+a user report, and the same care is owed to any future store swap. If the
+data matters, a one-time read of the old DataStore file on Android is still
+possible.
+
+### 9.4 The snapshot decision (R3) needs a JVM target that doesn't exist yet
+
+The chosen R3 direction - a CI-generated snapshot - has to parse the PDF
+*somewhere that isn't a browser or an Android device*. `core:parser` has no
+`jvm()` target today, and its Android actual uses `pdfbox-android`. The
+straightforward route is a JVM target whose actual uses Apache PDFBox
+(exactly the reference implementation this phase compared pdf.js against),
+driven by a small Gradle task the workflow calls. That's a new target and a
+new dependency - not a detail of Phase 4, a small piece of design.
+
+It also raises questions Phase 4 should answer explicitly: how the web UI
+communicates snapshot freshness ("list as of <date>"), and what happens
+when the scheduled job fails (stale snapshot, or visible warning?).
+
+### 9.5 The web build has no URL, history, title or icon story
+
+Navigation works, but the browser's address bar never changes - every
+screen is `/index.html`, so links can't be shared, refresh always restarts
+at splash, and the browser back button does nothing (`PlatformBackHandler`
+is deliberately a no-op on web). The page also 404s on `favicon.ico` and
+the tab title is static. None of this is covered by Phase 4's "responsive
+layout tweaks"; it's the difference between "the app renders in a browser"
+and "it behaves like a web page".
+
+### 9.6 Binary size has a number but no budget (R6)
+
+The production distribution is ~16 MB uncompressed (~8 MB of that is
+skiko.wasm, ~1.5 MB pdf.js). `deploy-web.yml` prints the size but nothing
+acts on it. Phase 4 should set a target and name the levers: dropping
+pdf.js from the web bundle once snapshots land (it stays useful only for a
+user-supplied CORS-enabled URL), and checking what GitHub Pages actually
+serves compressed.
+
+### 9.7 The only end-to-end Android test is still disabled
+
+`SplashSmokeTest` has been `@Ignore`d since PR #38 for CI flakiness, so the
+instrumented job currently proves only that the app compiles and installs.
+This phase rewired `MainActivity` onto `composeApp` - exactly the kind of
+change that test exists to catch. Phase 5/6 should own re-enabling it (and
+it is worth re-checking now: it passes locally on a real emulator).
+
+### 9.8 Smaller items
+
+- **`material-icons-extended` is pinned at 1.7.3**, the last multiplatform
+  release JetBrains published. It works (icons are just `ImageVector`s) but
+  it is a dead coordinate; a maintained icon source will be needed
+  eventually.
+- **iOS** appears only as an aside in code comments. The plan should either
+  add it as a phase or state that it is out of scope, so the `expect`/
+  `actual` boundaries drawn now are judged against a stated intent.
+- **No shared UI tests at all.** Compose Multiplatform supports
+  `runComposeUiTest` in `commonTest`; the four feature modules currently
+  have ViewModel tests only.
+- **Two Android shells now exist** (`:app` and `androidApp`) with separate
+  Applications and manifests. That is the intended Phase 7 setup, but it
+  means every Android-shell change has to be made twice until `:app` is
+  retired - so Phase 7 shouldn't drift.
