@@ -93,6 +93,7 @@ dependencies {
     implementation(project(":core:parser"))
     implementation(project(":core:data"))
     implementation(project(":feature:settings"))
+    implementation(project(":feature:sync"))
 
     // Core Android dependencies
     implementation(libs.androidx.core.ktx)
