@@ -1,23 +1,26 @@
+@file:OptIn(com.russhwolf.settings.ExperimentalSettingsApi::class)
+
 package org.neteinstein.pickaname.di
 
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStoreFile
+import android.content.Context
+import com.russhwolf.settings.SharedPreferencesSettings
+import com.russhwolf.settings.coroutines.FlowSettings
+import com.russhwolf.settings.coroutines.toFlowSettings
+import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
-private const val SETTINGS_DATASTORE_FILE_NAME = "pick_a_name_settings.preferences_pb"
+private const val SETTINGS_PREFERENCES_NAME = "pick_a_name_settings"
 
 /**
- * Preferences DataStore instance used to persist the configurable names-source URL.
+ * Settings storage used to persist the configurable names-source URL and related preferences.
  */
 val dataStoreModule = module {
-    single<DataStore<Preferences>> {
-        PreferenceDataStoreFactory.create(
-            produceFile = {
-                androidContext().preferencesDataStoreFile(SETTINGS_DATASTORE_FILE_NAME)
-            }
+    single<FlowSettings> {
+        val sharedPreferences = androidContext().getSharedPreferences(
+            SETTINGS_PREFERENCES_NAME,
+            Context.MODE_PRIVATE
         )
+        SharedPreferencesSettings(sharedPreferences).toFlowSettings(Dispatchers.Default)
     }
 }

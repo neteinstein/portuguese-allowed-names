@@ -1,19 +1,22 @@
 package org.neteinstein.pickaname.di
 
-import okhttp3.OkHttpClient
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpTimeout
 import org.koin.dsl.module
-import java.util.concurrent.TimeUnit
 
 /**
  * Framework-level singletons shared across the data layer (currently just the shared
- * [OkHttpClient] used to download the names-list PDF).
+ * [HttpClient] used to download the names-list PDF).
  */
 val appModule = module {
     single {
-        OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .build()
+        HttpClient(CIO) {
+            install(HttpTimeout) {
+                connectTimeoutMillis = 30_000
+                socketTimeoutMillis = 60_000
+                requestTimeoutMillis = 60_000
+            }
+        }
     }
 }

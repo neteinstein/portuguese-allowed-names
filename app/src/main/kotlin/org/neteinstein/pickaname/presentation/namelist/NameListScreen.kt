@@ -114,7 +114,7 @@ import androidx.core.net.toUri
 import androidx.core.view.doOnLayout
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
-import org.neteinstein.pickaname.R
+import org.neteinstein.pickaname.core.designsystem.R
 import org.neteinstein.pickaname.domain.model.Gender
 import org.neteinstein.pickaname.domain.model.NameEntry
 import org.neteinstein.pickaname.domain.model.SearchEngine

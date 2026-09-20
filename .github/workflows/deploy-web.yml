@@ -1,0 +1,71 @@
+name: Deploy Web
+
+# Builds the wasmJs (Compose Multiplatform for Web) distribution and publishes it to GitHub
+# Pages. Kept entirely separate from release.yml (Android/Play Store): different trigger,
+# different job, no shared state - a broken web build can never block an Android release.
+#
+# Runs on every push to the migration branch while the KMP/CMP port is being stabilized (see
+# MIGRATION_PLAN.md); once merged, retarget the `push.branches` trigger below at `main`.
+on:
+  push:
+    branches: [ claude/kmp-cmp-migration-plan-m6dlst ]
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build wasmJs distribution
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build wasmJs production distribution
+        run: ./gradlew :webApp:wasmJsBrowserDistribution
+
+      - name: Report artifact size
+        # Kotlin/Wasm + Compose Multiplatform Web binaries are multi-MB (see MIGRATION_PLAN.md
+        # risk R6) - surfaced on every run so growth is visible instead of silently creeping up.
+        run: du -sh webApp/build/dist/wasmJs/productionExecutable
+
+      # actions/upload-pages-artifact and actions/deploy-pages below are pinned by version tag,
+      # not commit SHA like this repo's other third-party actions - GitHub scope for this
+      # session didn't cover resolving their SHAs. Fine to re-pin by SHA in a follow-up (e.g.
+      # once Dependabot proposes it) to match convention.
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: webApp/build/dist/wasmJs/productionExecutable
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # Requires the repo owner to have set Settings -> Pages -> Source to "GitHub Actions"
+      # once (see MIGRATION_PLAN.md section 7) - this step fails until that one-time change is
+      # made, independent of anything this workflow does.
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

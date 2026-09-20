@@ -63,3 +63,8 @@ details.
 (PT) A app não recolhe quaisquer dados pessoais — consulte
 [PRIVACY_POLICY.md](PRIVACY_POLICY.md) para mais detalhes.
 
+## License
+
+Copyright © 2026 Pedro Vicente. Licensed under the
+[Apache License, Version 2.0](LICENSE) — see [NOTICE](NOTICE) for attribution details.
+

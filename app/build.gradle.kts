@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.ksp)
 }
 
 android {
@@ -82,6 +81,19 @@ android {
 }
 
 dependencies {
+    // core modules (see MIGRATION_PLAN.md) - domain layer, design system, and the whole data
+    // layer now live here; package names are unchanged from before each move, so no import in
+    // this module's own source needed to change.
+    implementation(project(":core:model"))
+    implementation(project(":core:domain"))
+    implementation(project(":core:designsystem"))
+    implementation(project(":core:network"))
+    implementation(project(":core:datastore"))
+    implementation(project(":core:database"))
+    implementation(project(":core:parser"))
+    implementation(project(":core:data"))
+    implementation(project(":feature:settings"))
+
     // Core Android dependencies
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -105,30 +117,25 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
 
-    // Room dependencies
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
-    ksp(libs.room.compiler)
-
-    // Settings persistence
-    implementation(libs.androidx.datastore.preferences)
-
-    // Networking + PDF parsing (names source download & extraction)
-    implementation(libs.okhttp)
-    implementation(libs.pdfbox.android)
+    // Networking (names source download) - the shared HttpClient built and provided from here
+    // (see di/AppModule.kt) since it's the only place that knows which Koin modules exist;
+    // Room/DataStore/OkHttp/pdfbox-android direct dependencies moved out with the code that used
+    // them (see the core/* modules above).
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.cio)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
 
     // Testing dependencies
+    testImplementation(project(":core:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockk)
     testImplementation(libs.turbine)
     testImplementation(libs.truth)
     testImplementation(libs.koin.test)
-    testImplementation(libs.okhttp.mockwebserver)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
