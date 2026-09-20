@@ -36,4 +36,6 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.truth)
     testImplementation(libs.turbine)
+    // MapSettings lives here, not in the main multiplatform-settings artifact.
+    testImplementation(libs.multiplatform.settings.test)
 }

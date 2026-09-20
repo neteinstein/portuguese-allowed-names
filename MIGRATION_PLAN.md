@@ -145,6 +145,12 @@ to **`ktor-client-cio`** — a pure-Kotlin/coroutines Ktor engine with no
 OkHttp dependency at all, so no AAR-metadata constraint to trip over.
 Equally fine for this app's plain GET-and-download-bytes use case.
 
+**Second CI round**: past the OkHttp issue (Ktor/CIO compiled clean), the
+next failure was `core:datastore`'s test source: `MapSettings` isn't in
+the main `multiplatform-settings` artifact - it lives in a dedicated
+`multiplatform-settings-test` artifact, which wasn't yet a dependency.
+Added it as `testImplementation`.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**
