@@ -134,6 +134,17 @@ and two DI files (`AppModule.kt`, `DataStoreModule.kt`) changed:
 Like Phase 0, none of this could be verified locally (same `dl.google.com`
 sandbox limitation) — written carefully, pushed, and validated via CI.
 
+**First CI round on Phase 1** hit the same class of issue as Phase 0's
+Compose Multiplatform surprise: `ktor-client-okhttp:3.6.0` transitively
+pulls in `com.squareup.okhttp3:okhttp-android:5.5.0`, which itself
+requires `compileSdk 37+` — one compileSdk generation ahead of this repo's
+`compileSdk 36`. Rather than fight OkHttp version pinning (excluding the
+transitive dep and forcing an older one is fragile and easy to get subtly
+wrong), switched `core:network`'s Android engine from `ktor-client-okhttp`
+to **`ktor-client-cio`** — a pure-Kotlin/coroutines Ktor engine with no
+OkHttp dependency at all, so no AAR-metadata constraint to trip over.
+Equally fine for this app's plain GET-and-download-bytes use case.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**

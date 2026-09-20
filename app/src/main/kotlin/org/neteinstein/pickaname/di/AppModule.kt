@@ -1,7 +1,7 @@
 package org.neteinstein.pickaname.di
 
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
 import org.koin.dsl.module
 
@@ -11,7 +11,7 @@ import org.koin.dsl.module
  */
 val appModule = module {
     single {
-        HttpClient(OkHttp) {
+        HttpClient(CIO) {
             install(HttpTimeout) {
                 connectTimeoutMillis = 30_000
                 socketTimeoutMillis = 60_000

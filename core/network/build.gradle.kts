@@ -27,7 +27,11 @@ android {
 
 dependencies {
     implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.okhttp)
+    // CIO rather than the OkHttp engine: ktor-client-okhttp 3.6.0 transitively pulls in
+    // okhttp-android 5.5.0, which requires compileSdk 37+ (this repo is on 36 - see
+    // MIGRATION_PLAN.md). CIO is a pure-Kotlin/coroutines engine with no such AAR metadata
+    // constraint, and is equally fine for our plain GET-and-download-bytes use case.
+    implementation(libs.ktor.client.cio)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

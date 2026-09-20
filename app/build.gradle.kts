@@ -121,7 +121,7 @@ dependencies {
     // Room/DataStore/OkHttp/pdfbox-android direct dependencies moved out with the code that used
     // them (see the core/* modules above).
     implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.cio)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)
