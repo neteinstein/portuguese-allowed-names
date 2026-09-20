@@ -58,8 +58,19 @@ class NameListTextParser {
             line.startsWith("Campus", ignoreCase = true) ||
             PAGE_NUMBER_REGEX.matches(line)
 
+    /**
+     * Cells are separated by a run of two or more spaces in pdfbox's output, but the web
+     * extractor (pdf.js) can only tell the columns apart by geometry, and this document's
+     * gender→name gap and name→next-column gap overlap once names get long - so it joins a row's
+     * fragments with single spaces and leaves the cell boundaries to the one thing that marks
+     * them unambiguously: a gender keyword starting a new cell. Splitting on both keeps a single
+     * parser honest for both platforms' text.
+     */
     private fun splitIntoCells(line: String): List<String> =
-        line.split(CELL_SEPARATOR_REGEX).map { it.trim() }.filter { it.isNotEmpty() }
+        line.split(CELL_SEPARATOR_REGEX)
+            .flatMap { it.split(GENDER_KEYWORD_BOUNDARY_REGEX) }
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
 
     private fun genderKeywordToGender(keyword: String): Gender? = when {
         keyword.equals("Femininos", ignoreCase = true) -> Gender.FEMALE
@@ -70,5 +81,9 @@ class NameListTextParser {
     private companion object {
         val PAGE_NUMBER_REGEX = Regex("""\d+/\d+""")
         val CELL_SEPARATOR_REGEX = Regex("""\s{2,}""")
+
+        /** Splits before a gender keyword that follows other text on the same line. */
+        val GENDER_KEYWORD_BOUNDARY_REGEX =
+            Regex("""\s+(?=(?:Femininos|Masculinos)\b)""", RegexOption.IGNORE_CASE)
     }
 }

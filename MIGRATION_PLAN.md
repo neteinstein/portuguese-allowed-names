@@ -474,6 +474,105 @@ recommends committing it, but the only wasmJs CI job today runs *after*
 merge to `main`, so a lock mismatch would surface too late to catch in
 review. Revisit when Phase 5 puts a wasmJs job in `pr-checks.yml`.
 
+**Risk R1 (Room on web) is resolved: Room stays Android-only, the web gets
+its own store.** Checked Google's Maven index rather than guessing:
+`room-runtime` publishes no `wasm-js` artifact at all (only
+`room-common-wasm-js`, i.e. the annotations), and neither does
+`androidx.sqlite`'s bundled driver - so there is no "Room on wasmJs" option
+to pick. `core:database` is now KMP with the store expressed as a plain
+Kotlin interface both platforms implement:
+- `commonMain`: `NameLocalDataSource` (the DAO contract, documented so the
+  two implementations can be checked against each other) + `NameRecord` (a
+  platform-neutral row), with `NameRepositoryImpl` and the mappers now
+  target-agnostic.
+- `androidMain`: `AppDatabase`/`NameDao`/`NameEntity` exactly as before
+  (KSP wired through `kspAndroid` only), behind a thin
+  `RoomNameLocalDataSource` adapter. Android behavior is unchanged.
+- `wasmJsMain`: `LocalStorageNameLocalDataSource` - the list in memory,
+  mirrored into `localStorage`, with filtering/ordering/dedup mirroring the
+  DAO's SQL. **Deviation from the plan's original R1 sketch** (IndexedDB):
+  the list is ~7,500 short strings, comfortably inside `localStorage`'s
+  ~5 MB budget, and its synchronous API needs no async plumbing, no schema
+  and no extra dependency. The write path fails soft if the quota is ever
+  exceeded, which is the signal to revisit IndexedDB.
+- `java.text.Normalizer` (in `toFilterInitial`) became an expect/actual
+  `stripDiacritics()`: `Normalizer` on Android, the browser's own
+  `String.normalize('NFD')` on web. Both real Unicode data - no hand-rolled
+  accent table that would quietly miss a letter.
+
+`core:data` went KMP in the same pass (`NameSyncRepositoryImpl` against the
+new interface, `ParsedName.toEntity()` → `toRecord()`), and `:app`'s
+`DatabaseModule` binds `NameLocalDataSource` to the Room implementation.
+Nine new browser tests (`:core:database:wasmJsTest`, real ChromeHeadless)
+cover the web store and the diacritic actual.
+
+**Risk R2 (PDF parsing on web) is resolved, and verified against the real
+document.** `PdfTextExtractor`'s wasmJs actual is no longer a stub: it wraps
+`pdf.js` (`pdfjs-dist`, an npm dependency of `core:parser`'s wasmJs target,
+bundled by webpack). Three things this turned up that only a real browser
+could have told us:
+1. **Worker loading.** The documented ways to point
+   `GlobalWorkerOptions.workerSrc` at pdf.js's worker bundle
+   (`import.meta.url`, `new Worker(new URL(...))`) don't exist in Kotlin/
+   Wasm's webpack output, which is a classic script. Assigning the imported
+   worker module to `globalThis.pdfjsWorker` puts pdf.js on its own
+   fake-worker path, which works (parsing runs on the main thread).
+2. **pdf.js emits positioned fragments, not lines** - plus synthetic
+   whitespace-only items. Those are dropped and every separator is derived
+   from x positions instead, since a synthetic space carries a whole
+   column's width.
+3. **The column separator cannot be recovered from gap size.** Measured on
+   the real document: the gender→name gap inside a cell is ~73-80pt and the
+   name→next-column gap is ~89pt, and the latter shrinks below the former
+   as names get longer - no threshold separates them. Rather than guess,
+   `NameListTextParser` now splits cells **on gender keywords as well as on
+   double spaces**; pdfbox's double-space output parses exactly as before
+   (its tests are untouched and still pass), and pdf.js can join a row with
+   single spaces and stay correct. Row grouping also had to grow from
+   "round y into buckets" to "grow a row from its topmost baseline within
+   ~0.7x the text height", which is what folds the document's one wrapped
+   hyphenated name (`Darius-` / `Alexandru`) back into its own row the way
+   pdfbox does.
+
+Verified end to end, in ChromeHeadless, against the real 2.9 MB source PDF:
+the pdf.js path produces **7,481 names, an identical (name, gender) set to
+Apache PDFBox 2.0.27's `-sort` output** run through the same parser. (That
+comparison used the live document and a locally served copy, so it isn't a
+committed test; what is committed is `PdfTextExtractorTest`, which runs the
+extractor in a real browser against a small hand-built two-column PDF, plus
+`NameListTextParserCellSplitTest` in `commonTest`, which pins both
+platforms' whitespace shapes to the same parsed names.)
+
+Note for R6 (binary size): the current `:webApp` distribution is ~11 MB and
+does **not** yet include pdf.js, since `composeApp` is still a Phase 0
+placeholder that never reaches `core:parser`. Wiring the real app up will
+add roughly 1.5 MB of pdf.js (448 KB main + 1.0 MB worker, uncompressed).
+
+**Risk R3 (web sync/CORS) is answered, and the answer is no.** Now that
+this environment can reach the source host, a plain request settles what
+earlier phases could only flag: the IRN PDF comes back `200 OK`
+(`application/pdf`, 2,905,263 bytes) **with no `Access-Control-Allow-Origin`
+header at all**, and an `OPTIONS` preflight to the same URL returns
+`502 Bad Gateway`. A browser `fetch`/Ktor-JS request from the GitHub Pages
+origin will therefore be blocked - the web build cannot download the names
+list directly, no matter which HTTP client it uses. (Second, smaller
+finding: the host also 502s any request without a `User-Agent` header, so
+whatever eventually fetches it must send one.)
+
+That makes Phase 4's fallback the real plan rather than a contingency, and
+it's worth deciding between two shapes before building either:
+- **Ship a snapshot.** A scheduled/CI job fetches and parses the PDF and
+  commits a small names file next to the Pages site; the web build loads
+  that same-origin file, so "sync" on web means "pull the latest snapshot".
+  Needs new CI infrastructure (and a JVM-side parse), but gives the web
+  build a working, always-current list and sidesteps CORS entirely.
+- **Disable sync on web.** Ship the page with whatever snapshot is baked in
+  and tell the user plainly that refreshing the list is Android-only, per
+  the original Phase 4 text.
+The pdf.js work above is not wasted either way: it's what makes a
+user-supplied, CORS-enabled URL (and a future "open a local PDF" file
+picker) work on web.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**
