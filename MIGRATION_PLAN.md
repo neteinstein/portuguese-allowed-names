@@ -429,6 +429,51 @@ gap explicit rather than silently faking web PDF parsing. Implementing
 `pdf.js` interop for real, and verifying it against the actual names-list
 PDF in a real browser, stays open Phase 3 work.
 
+**Local builds now work — the sandbox limitation above is gone.** Every
+phase up to here was written blind and validated only via CI (no
+`dl.google.com` access, no Android SDK, no browser). This session runs on a
+machine with the Android SDK and Chrome available, so the whole graph —
+`assembleDebug`, `testDebugUnitTest`, every module's `compileKotlinWasmJs`,
+and even `wasmJsBrowserTest` against real headless Chrome — builds and runs
+locally before anything is pushed. Notes from here on report *locally
+verified* results, not "written carefully, will find out in CI".
+
+**First thing that found: `core:domain`'s wasmJs target never actually
+compiled.** Nothing in CI ever built it — `deploy-web.yml` builds
+`:webApp:wasmJsBrowserDistribution`, and that only reaches
+`composeApp → core:designsystem → core:model`, so `core:domain`'s `wasmJs`
+compilation had been dead code since Phase 0 declared the target. Running
+`:core:domain:compileKotlinWasmJs` locally failed immediately on two
+JVM-only APIs sitting in `commonMain`:
+- `UpdateSourceUrlUseCase` validated URLs with `java.net.URI`. Replaced
+  with an `internal fun isValidHttpUrl(String)` in the same file — a
+  hand-rolled scheme/host check rather than a new dependency, since the
+  domain layer never needs the *parsed* URL, only a yes/no answer. It
+  preserves every accept/reject case the existing JVM test asserts
+  (whitespace rejected like `URI` does, `https://` with no host rejected,
+  non-http(s) schemes rejected), and drops userinfo/port before checking
+  the host.
+- `SyncNamesUseCase`/`RefreshNamesIfDueUseCase` both defaulted their
+  injectable clock to `System::currentTimeMillis`. Both now default to
+  `systemCurrentTimeMillis()` (`domain/time/CurrentTime.kt`), a one-line
+  wrapper over `kotlin.time.Clock.System.now().toEpochMilliseconds()` from
+  the Kotlin stdlib — no `kotlinx-datetime` dependency needed. Tests keep
+  passing their own `() -> Long`, unchanged.
+
+Also added `core:domain`'s first `commonTest`: `IsValidHttpUrlTest`, written
+against `kotlin.test` rather than JUnit/Truth/MockK so it runs on *both*
+targets — it passes under `:core:domain:wasmJsTest` (real ChromeHeadless)
+and rides along in `testDebugUnitTest` on Android. The older MockK-based
+use-case tests still live in `app/src/test`; relocating and porting those to
+`commonTest` stays Phase 5 work, unchanged.
+
+`kotlin-js-store/` (the Kotlin Gradle plugin's generated yarn lock, which
+appears the first time a wasmJs test task runs locally) is gitignored rather
+than committed, with the reasoning written next to the entry: Kotlin
+recommends committing it, but the only wasmJs CI job today runs *after*
+merge to `main`, so a lock mismatch would surface too late to catch in
+review. Revisit when Phase 5 puts a wasmJs job in `pr-checks.yml`.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**
