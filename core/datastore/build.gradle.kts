@@ -28,8 +28,10 @@ android {
 dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:domain"))
-    implementation(libs.multiplatform.settings)
-    implementation(libs.multiplatform.settings.coroutines)
+    // api, not implementation: :app's own DataStoreModule.kt builds the FlowSettings/
+    // SharedPreferencesSettings directly, so it needs these on its own compile classpath too.
+    api(libs.multiplatform.settings)
+    api(libs.multiplatform.settings.coroutines)
     implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.junit)

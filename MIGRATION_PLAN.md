@@ -151,6 +151,21 @@ the main `multiplatform-settings` artifact - it lives in a dedicated
 `multiplatform-settings-test` artifact, which wasn't yet a dependency.
 Added it as `testImplementation`.
 
+**Third CI round**: `:app:compileDebugKotlin` itself failed with a string
+of "unresolved reference"/"cannot access class" errors for `Room` and
+`FlowSettings`. Cause: `:app`'s own `di/DatabaseModule.kt` and
+`di/DataStoreModule.kt` construct the Room database and the
+`FlowSettings`/`SharedPreferencesSettings` instances directly (that
+construction logic was deliberately kept in `:app`'s DI, not pushed into
+the core modules - see §5 Phase 1), so `:app` needs Room and
+multiplatform-settings on its own compile classpath, not just visible
+*inside* `core:database`/`core:datastore`. Both modules had declared them
+as `implementation` (module-private), so nothing flowed through the
+`implementation(project(":core:database"))`/`":core:datastore"` edges.
+Changed both to `api` in the two core modules - the correct fix, since
+these are exactly the "leaky by design" dependencies a consuming DI module
+needs, not implementation details to hide.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**

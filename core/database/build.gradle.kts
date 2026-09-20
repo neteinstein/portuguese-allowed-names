@@ -29,8 +29,10 @@ android {
 dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:domain"))
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
+    // api, not implementation: :app's own DatabaseModule.kt builds the Room database directly
+    // (Room.databaseBuilder(...)), so it needs these on its own compile classpath too.
+    api(libs.room.runtime)
+    api(libs.room.ktx)
     ksp(libs.room.compiler)
     implementation(libs.kotlinx.coroutines.core)
 
