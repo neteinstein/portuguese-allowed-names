@@ -304,6 +304,50 @@ doesn't build wasmJs itself) - acceptable since Phase 2's four extractions
 are Android-only anyway (§5); revisit once Phase 5 adds a real
 `wasmJsBrowserTest`/build check to `pr-checks.yml` for every PR.
 
+**`feature:splash` extraction (fourth and last of Phase 2's four feature
+modules)** hit the same class of problem `feature:namelist` did with
+`GenderTag`, but in a shape that couldn't be solved by moving a file:
+`SplashScreen.kt` renders `AppR.drawable.ic_launcher_foreground` - the
+app's launcher icon, deliberately kept in `:app`'s own resources rather
+than `core:designsystem` back in the very first Phase 2 CI round (it's
+app-identity, not shared UI). A `feature:*` module structurally cannot
+depend on `:app` (§3.1: dependencies only point inward), so `feature:splash`
+can't reach that drawable by import, and duplicating the launcher icon
+into `core:designsystem` would contradict that earlier, correct call.
+
+Fixed by inverting the dependency instead of relocating the asset:
+`SplashScreen`/`SplashContent` now take a `@DrawableRes logoRes: Int`
+parameter rather than reaching for a hardcoded resource themselves, and
+`PickANameNavHost.kt` (staying in `:app`, the one place that already knows
+about all of `:app`'s own resources) passes
+`R.drawable.ic_launcher_foreground` in at the call site. This is a real
+(small) design improvement, not just a migration workaround: the splash
+composable no longer needs to know *which* app it's branding, which is
+exactly the kind of decoupling feature-module boundaries are supposed to
+force.
+
+`SplashViewModel.kt`/`SplashViewModelTest.kt` moved with zero changes
+(same pattern as every prior extraction). Also removed
+`androidx.material.icons.extended` from `:app`'s own `build.gradle.kts`:
+with `NameListScreen`/`GenderTag`/`SyncScreen` all moved out over the last
+three rounds, nothing left in `:app`'s own source references any Material
+icon at all.
+
+**Phase 2 is now content-complete**: all four features (`settings`,
+`sync`, `namelist`, `splash`) live in their own modules. What's left of
+`:app` is `MainActivity`, the manifest, launcher icons/proguard rules, DI
+wiring (`di/*Module.kt`), and `PickANameNavHost`/`Routes` (deferred to
+Phase 3 alongside the real Navigation-Compose swap, per §5's original
+plan). The one thing Phase 2's roadmap description also called for -
+"moving `PickANameNavHost` assembly into `composeApp`" - is deliberately
+**not** done in this round: `composeApp`/`androidApp` are still Phase 0
+placeholders (`androidApp`'s `MainActivity` even lives in an isolated
+`.../next/` package), and retiring `:app` in favor of them is coupled to
+`release.yml` (hardcoded `app/` paths for the keystore, the versionName
+bump regex, and build output paths). That cutover deserves its own
+careful, explicitly-reviewed step rather than riding along with a feature
+extraction.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**
