@@ -217,6 +217,18 @@ alongside the unaliased `core:designsystem` one, using `AppR.drawable...`
 for the launcher asset and the plain `R.string...` calls for everything
 else.
 
+**Second CI round on Phase 2** caught a variant of the same class of bug:
+`app/src/androidTest/.../SplashSmokeTest.kt` is in the bare
+`org.neteinstein.pickaname` package (same as `:app`'s own namespace), so it
+was resolving `R.string.app_name` via Kotlin's implicit same-package `R`
+class - no explicit `import` line existed for it at all, which is why the
+earlier grep for explicit `import ... R` statements never caught this
+file. Fixed by adding an explicit
+`import org.neteinstein.pickaname.core.designsystem.R`. Followed up with a
+broader sweep (`\bR\.(string|plurals|drawable|mipmap|style|xml|color|array)\.`
+across all of `app/src`) to check for any other implicit references this
+pattern could hide; no further instances were found.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**
