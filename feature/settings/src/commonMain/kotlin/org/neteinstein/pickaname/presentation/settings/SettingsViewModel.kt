@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import org.neteinstein.pickaname.domain.model.NamesSourceDefaults
 import org.neteinstein.pickaname.domain.model.RefreshPeriod
 import org.neteinstein.pickaname.domain.model.SearchEngine
+import org.neteinstein.pickaname.domain.usecase.GetLastRefreshTimestampUseCase
 import org.neteinstein.pickaname.domain.usecase.GetRefreshPeriodUseCase
 import org.neteinstein.pickaname.domain.usecase.GetSearchEngineUseCase
 import org.neteinstein.pickaname.domain.usecase.GetSourceUrlUseCase
@@ -25,7 +26,9 @@ data class SettingsUiState(
     val sourceUrl: String = "",
     val urlError: Boolean = false,
     val refreshPeriod: RefreshPeriod = RefreshPeriod.DEFAULT,
-    val searchEngine: SearchEngine = SearchEngine.DEFAULT
+    val searchEngine: SearchEngine = SearchEngine.DEFAULT,
+    /** Epoch millis of the last successful load, or null if the list has never loaded. */
+    val lastRefreshTimestamp: Long? = null
 )
 
 /** One-off events the Settings screen should react to (e.g. by navigating to the sync screen). */
@@ -38,6 +41,7 @@ class SettingsViewModel(
     private val updateSourceUrlUseCase: UpdateSourceUrlUseCase,
     private val resetSourceUrlUseCase: ResetSourceUrlUseCase,
     private val getRefreshPeriodUseCase: GetRefreshPeriodUseCase,
+    private val getLastRefreshTimestampUseCase: GetLastRefreshTimestampUseCase,
     private val updateRefreshPeriodUseCase: UpdateRefreshPeriodUseCase,
     private val getSearchEngineUseCase: GetSearchEngineUseCase,
     private val updateSearchEngineUseCase: UpdateSearchEngineUseCase
@@ -59,6 +63,19 @@ class SettingsViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(searchEngine = getSearchEngineUseCase()) }
         }
+        viewModelScope.launch {
+            _uiState.update { it.copy(lastRefreshTimestamp = getLastRefreshTimestampUseCase()) }
+        }
+    }
+
+    /**
+     * Re-load the names list without changing any setting - the only "sync" action that makes
+     * sense where the source isn't configurable (the web build, which reads a published
+     * snapshot). Reuses [SettingsEvent.SourceUpdated] because the screen's reaction is the same:
+     * hand off to the sync screen.
+     */
+    fun onCheckForUpdates() {
+        viewModelScope.launch { _events.send(SettingsEvent.SourceUpdated) }
     }
 
     fun onUrlChange(newUrl: String) {

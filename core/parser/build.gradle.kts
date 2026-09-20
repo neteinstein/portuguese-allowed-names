@@ -18,6 +18,9 @@ kotlin {
     }
     iosArm64()
     iosSimulatorArm64()
+    // Not for an app: this target exists so CI can parse the source PDF when it generates the
+    // web names snapshot (see tools/names-snapshot and MIGRATION_PLAN.md's R3 decision).
+    jvm()
 
     sourceSets {
         commonMain.dependencies {
@@ -32,6 +35,9 @@ kotlin {
                 // this one.
                 implementation(npm("pdfjs-dist", "5.4.149"))
             }
+        }
+        jvmMain.dependencies {
+            implementation(libs.pdfbox)
         }
         androidMain.dependencies {
             // api, not implementation: PickANameApplication calls

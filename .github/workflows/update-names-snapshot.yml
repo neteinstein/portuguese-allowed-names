@@ -1,0 +1,86 @@
+name: Update Names Snapshot
+
+# Regenerates the names snapshot the *web* build loads (webApp/src/wasmJsMain/resources/
+# names-snapshot.tsv) and commits it when it changes, which in turn triggers deploy-web.yml.
+#
+# Why a snapshot at all: the official IRN source serves no `Access-Control-Allow-Origin` header,
+# so a browser refuses to fetch it whatever client the page uses (MIGRATION_PLAN.md risk R3).
+# Parsing it here - with the same parser the apps use, through core:parser's JVM target - turns
+# the web sync into a same-origin fetch of ~70 KB and spares visitors a 2.9 MB PDF parse.
+#
+# The Android and iOS apps are unaffected: they still download and parse the source themselves.
+on:
+  schedule:
+    # Weekly, Monday 05:00 UTC. The source list changes rarely; this is about not going stale,
+    # not about latency.
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+    inputs:
+      source-url:
+        description: 'Override the names source URL (defaults to the app''s built-in one)'
+        required: false
+        type: string
+
+concurrency:
+  group: names-snapshot
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    name: Regenerate snapshot
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # The generator refuses to write an empty snapshot, so a failed download or a source whose
+      # layout changed fails this step instead of quietly publishing an empty list.
+      - name: Generate snapshot
+        run: ./gradlew :tools:names-snapshot:run --args="webApp/src/wasmJsMain/resources/names-snapshot.tsv ${{ inputs.source-url }}"
+
+      - name: Sanity-check the snapshot
+        run: |
+          set -euo pipefail
+          SNAPSHOT=webApp/src/wasmJsMain/resources/names-snapshot.tsv
+          COUNT=$(grep -vc '^#' "$SNAPSHOT")
+          echo "Snapshot holds $COUNT names"
+          # The real list is ~7,500 names. A sudden collapse to a few hundred means the source
+          # layout changed and the parser silently kept only part of it - don't publish that.
+          if [ "$COUNT" -lt 5000 ]; then
+            echo "::error::Only $COUNT names parsed - refusing to publish a suspiciously small list."
+            exit 1
+          fi
+
+      - name: Commit if changed
+        run: |
+          set -euo pipefail
+          SNAPSHOT=webApp/src/wasmJsMain/resources/names-snapshot.tsv
+          # The generated-at line changes on every run, so compare the names themselves.
+          if git diff --quiet -- "$SNAPSHOT"; then
+            echo "No changes."
+            exit 0
+          fi
+          if [ -z "$(git diff -- "$SNAPSHOT" | grep -E '^[+-][^+-]' | grep -vE '^[+-]# generated:')" ]; then
+            echo "Only the generation timestamp changed - not committing."
+            git checkout -- "$SNAPSHOT"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$SNAPSHOT"
+          git commit -m "chore: update names snapshot [skip ci]"
+          git push

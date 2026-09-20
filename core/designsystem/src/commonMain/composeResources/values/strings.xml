@@ -85,6 +85,13 @@
     <!-- Common -->
     <string name="cd_back">Back</string>
 
+    <!-- Shown instead of the source settings where the list comes from a published snapshot -->
+    <string name="settings_names_list_section">Names list</string>
+    <string name="settings_names_list_description">This site reads the official IRN list of approved Portuguese first names, published alongside it and refreshed automatically.</string>
+    <string name="settings_names_list_updated">Last loaded: %1$s</string>
+    <string name="settings_names_list_never_updated">Not loaded yet</string>
+    <string name="settings_names_list_check_updates">Check for updates</string>
+
     <!-- Web-only: "get the Android app" banner (see InstallAppBanner) -->
     <string name="web_install_banner_title">Get the Android app</string>
     <string name="web_install_banner_message">Faster, works offline, and syncs the latest official list.</string>

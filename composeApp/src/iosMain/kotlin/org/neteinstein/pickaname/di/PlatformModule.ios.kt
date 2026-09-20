@@ -14,6 +14,8 @@ import org.koin.dsl.module
 import org.neteinstein.pickaname.data.local.database.NameLocalDataSource
 import org.neteinstein.pickaname.data.local.database.UserDefaultsNameLocalDataSource
 import org.neteinstein.pickaname.data.parser.PdfTextExtractor
+import org.neteinstein.pickaname.data.repository.NameSyncRepositoryImpl
+import org.neteinstein.pickaname.domain.repository.NameSyncRepository
 import platform.Foundation.NSUserDefaults
 
 /**
@@ -39,4 +41,7 @@ actual fun platformModule(): Module = module {
     }
 
     single { PdfTextExtractor() }
+
+    // Native platforms download and parse the source PDF themselves.
+    single<NameSyncRepository> { NameSyncRepositoryImpl(get(), get(), get(), get()) }
 }

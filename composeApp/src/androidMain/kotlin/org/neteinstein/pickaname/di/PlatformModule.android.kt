@@ -20,6 +20,8 @@ import org.neteinstein.pickaname.data.local.database.NameLocalDataSource
 import org.neteinstein.pickaname.data.local.database.RoomNameLocalDataSource
 import org.neteinstein.pickaname.data.local.datastore.migrateLegacyDataStoreSettings
 import org.neteinstein.pickaname.data.parser.PdfTextExtractor
+import org.neteinstein.pickaname.data.repository.NameSyncRepositoryImpl
+import org.neteinstein.pickaname.domain.repository.NameSyncRepository
 
 private const val SETTINGS_PREFERENCES_NAME = "pick_a_name_settings"
 
@@ -59,4 +61,7 @@ actual fun platformModule(): Module = module {
     }
 
     single { PdfTextExtractor() }
+
+    // Native platforms download and parse the source PDF themselves.
+    single<NameSyncRepository> { NameSyncRepositoryImpl(get(), get(), get(), get()) }
 }

@@ -85,6 +85,13 @@
     <!-- Comum -->
     <string name="cd_back">Voltar</string>
 
+    <!-- Mostrado em vez das definições de fonte quando a lista vem de um snapshot publicado -->
+    <string name="settings_names_list_section">Lista de nomes</string>
+    <string name="settings_names_list_description">Este site lê a lista oficial do IRN de nomes próprios aprovados, publicada juntamente com ele e atualizada automaticamente.</string>
+    <string name="settings_names_list_updated">Carregada em: %1$s</string>
+    <string name="settings_names_list_never_updated">Ainda não carregada</string>
+    <string name="settings_names_list_check_updates">Procurar atualizações</string>
+
     <!-- Apenas na web: faixa "instale a aplicação Android" (ver InstallAppBanner) -->
     <string name="web_install_banner_title">Instale a aplicação Android</string>
     <string name="web_install_banner_message">Mais rápida, funciona offline e sincroniza a lista oficial mais recente.</string>

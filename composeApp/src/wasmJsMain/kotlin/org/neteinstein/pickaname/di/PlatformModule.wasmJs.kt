@@ -15,6 +15,8 @@ import org.koin.dsl.module
 import org.neteinstein.pickaname.data.local.database.LocalStorageNameLocalDataSource
 import org.neteinstein.pickaname.data.local.database.NameLocalDataSource
 import org.neteinstein.pickaname.data.parser.PdfTextExtractor
+import org.neteinstein.pickaname.data.repository.SnapshotNameSyncRepository
+import org.neteinstein.pickaname.domain.repository.NameSyncRepository
 
 /**
  * The browser equivalents of Android's Room/SharedPreferences/CIO stack: the names list in
@@ -39,4 +41,10 @@ actual fun platformModule(): Module = module {
     single<FlowSettings> { StorageSettings().makeObservable().toFlowSettings(Dispatchers.Default) }
 
     single { PdfTextExtractor() }
+
+    // The web build syncs from the snapshot CI publishes next to it rather than downloading the
+    // source PDF: the browser would refuse that request outright (no CORS header - risk R3), and
+    // this spares every visitor a 2.9 MB PDF parse. PdfTextExtractor above stays registered for
+    // a user-supplied, CORS-enabled URL.
+    single<NameSyncRepository> { SnapshotNameSyncRepository(get(), get()) }
 }

@@ -19,6 +19,9 @@ truth = "1.4.5"
 navigation-compose = "2.9.8"
 koin-bom = "4.2.2"
 pdfbox-android = "2.0.27.0"
+# Apache PDFBox proper, for the JVM target that generates the web names snapshot in CI. Same
+# major/minor as the Android fork above, so both extractors behave the same way.
+pdfbox = "2.0.27"
 core-splashscreen = "1.2.0"
 browser = "1.9.0"
 compose-multiplatform = "1.10.2"
@@ -71,6 +74,7 @@ koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose" }
 koin-test = { module = "io.insert-koin:koin-test" }
 koin-core = { module = "io.insert-koin:koin-core" }
 pdfbox-android = { module = "com.tom-roush:pdfbox-android", version.ref = "pdfbox-android" }
+pdfbox = { module = "org.apache.pdfbox:pdfbox", version.ref = "pdfbox" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "core-splashscreen" }
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
