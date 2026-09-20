@@ -1232,9 +1232,15 @@ it is worth re-checking now: it passes locally on a real emulator).
   release JetBrains published. It works (icons are just `ImageVector`s) but
   it is a dead coordinate; a maintained icon source will be needed
   eventually.
-- **iOS** appears only as an aside in code comments. The plan should either
-  add it as a phase or state that it is out of scope, so the `expect`/
-  `actual` boundaries drawn now are judged against a stated intent.
+- **iOS** is no longer an aside: every KMP module now has `iosArm64` +
+  `iosSimulatorArm64` targets with real actuals (PDFKit for text
+  extraction, `NSUserDefaults` for both stores, Foundation's diacritic
+  folding, `UIApplication` for opening URLs and the per-app language
+  screen), `composeApp` exposes a `MainViewController()` entry point, and
+  CI links the framework and runs the shared tests on a simulator. What
+  does **not** exist is an Xcode project, so nothing has been *run* on iOS
+  - the checks prove it compiles, links and passes shared tests, which is
+  the honest limit without an app shell.
 - **No shared UI tests at all.** Compose Multiplatform supports
   `runComposeUiTest` in `commonTest`; the four feature modules currently
   have ViewModel tests only.

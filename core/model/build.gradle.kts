@@ -16,6 +16,8 @@ kotlin {
     wasmJs {
         browser()
     }
+    iosArm64()
+    iosSimulatorArm64()
 
     sourceSets {
         commonTest.dependencies {
