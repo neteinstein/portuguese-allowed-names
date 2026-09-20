@@ -50,13 +50,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
-import org.neteinstein.pickaname.core.designsystem.R
 import org.neteinstein.pickaname.domain.model.SyncFailureReason
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
+import org.neteinstein.pickaname.core.designsystem.resources.Res
+import org.neteinstein.pickaname.core.designsystem.resources.sync_edit_source
+import org.neteinstein.pickaname.core.designsystem.resources.sync_error_invalid_source
+import org.neteinstein.pickaname.core.designsystem.resources.sync_error_network
+import org.neteinstein.pickaname.core.designsystem.resources.sync_error_no_names_found
+import org.neteinstein.pickaname.core.designsystem.resources.sync_error_title
+import org.neteinstein.pickaname.core.designsystem.resources.sync_error_unknown
+import org.neteinstein.pickaname.core.designsystem.resources.sync_loading_message
+import org.neteinstein.pickaname.core.designsystem.resources.sync_loading_title
+import org.neteinstein.pickaname.core.designsystem.resources.sync_retry
 
 /**
  * Shown on first run and whenever the names source URL changes. Downloads, parses and persists
@@ -143,13 +153,13 @@ private fun LoadingContent() {
         }
         Spacer(modifier = Modifier.height(28.dp))
         Text(
-            text = stringResource(R.string.sync_loading_title),
+            text = stringResource(Res.string.sync_loading_title),
             style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = stringResource(R.string.sync_loading_message),
+            text = stringResource(Res.string.sync_loading_message),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -202,7 +212,7 @@ private fun ErrorContent(
         }
         Spacer(modifier = Modifier.height(20.dp))
         Text(
-            text = stringResource(R.string.sync_error_title),
+            text = stringResource(Res.string.sync_error_title),
             style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center
         )
@@ -228,7 +238,7 @@ private fun ErrorContent(
                     modifier = Modifier.size(ButtonDefaults.IconSize)
                 )
                 Spacer(modifier = Modifier.width(ButtonDefaults.IconSpacing))
-                Text(stringResource(R.string.sync_edit_source))
+                Text(stringResource(Res.string.sync_edit_source))
             }
             Button(
                 onClick = onRetry,
@@ -240,15 +250,15 @@ private fun ErrorContent(
                     modifier = Modifier.size(ButtonDefaults.IconSize)
                 )
                 Spacer(modifier = Modifier.width(ButtonDefaults.IconSpacing))
-                Text(stringResource(R.string.sync_retry))
+                Text(stringResource(Res.string.sync_retry))
             }
         }
     }
 }
 
-private fun SyncFailureReason.messageRes(): Int = when (this) {
-    SyncFailureReason.NETWORK -> R.string.sync_error_network
-    SyncFailureReason.INVALID_SOURCE -> R.string.sync_error_invalid_source
-    SyncFailureReason.NO_NAMES_FOUND -> R.string.sync_error_no_names_found
-    SyncFailureReason.UNKNOWN -> R.string.sync_error_unknown
+private fun SyncFailureReason.messageRes(): StringResource = when (this) {
+    SyncFailureReason.NETWORK -> Res.string.sync_error_network
+    SyncFailureReason.INVALID_SOURCE -> Res.string.sync_error_invalid_source
+    SyncFailureReason.NO_NAMES_FOUND -> Res.string.sync_error_no_names_found
+    SyncFailureReason.UNKNOWN -> Res.string.sync_error_unknown
 }

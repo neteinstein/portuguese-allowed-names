@@ -102,8 +102,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -117,7 +115,6 @@ import androidx.core.net.toUri
 import androidx.core.view.doOnLayout
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
-import org.neteinstein.pickaname.core.designsystem.R
 import org.neteinstein.pickaname.domain.model.Gender
 import org.neteinstein.pickaname.domain.model.NameEntry
 import org.neteinstein.pickaname.domain.model.SearchEngine
@@ -130,6 +127,44 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
+import org.neteinstein.pickaname.core.designsystem.resources.Res
+import org.neteinstein.pickaname.core.designsystem.resources.app_name
+import org.neteinstein.pickaname.core.designsystem.resources.cd_clear_search
+import org.neteinstein.pickaname.core.designsystem.resources.cd_letter_fast_scroller
+import org.neteinstein.pickaname.core.designsystem.resources.cd_name_rules_icon
+import org.neteinstein.pickaname.core.designsystem.resources.cd_random_name_icon
+import org.neteinstein.pickaname.core.designsystem.resources.cd_settings_icon
+import org.neteinstein.pickaname.core.designsystem.resources.cd_traditional_names_info_icon
+import org.neteinstein.pickaname.core.designsystem.resources.filter_gender_all
+import org.neteinstein.pickaname.core.designsystem.resources.filter_initial_all
+import org.neteinstein.pickaname.core.designsystem.resources.filter_section_gender
+import org.neteinstein.pickaname.core.designsystem.resources.filter_section_initial
+import org.neteinstein.pickaname.core.designsystem.resources.filter_section_other
+import org.neteinstein.pickaname.core.designsystem.resources.filter_traditional_names
+import org.neteinstein.pickaname.core.designsystem.resources.gender_female
+import org.neteinstein.pickaname.core.designsystem.resources.gender_male
+import org.neteinstein.pickaname.core.designsystem.resources.name_count
+import org.neteinstein.pickaname.core.designsystem.resources.name_list_auto_refresh_failed
+import org.neteinstein.pickaname.core.designsystem.resources.name_list_empty_state
+import org.neteinstein.pickaname.core.designsystem.resources.name_list_search_hint
+import org.neteinstein.pickaname.core.designsystem.resources.name_meaning_bottom_sheet_title
+import org.neteinstein.pickaname.core.designsystem.resources.name_meaning_search_query
+import org.neteinstein.pickaname.core.designsystem.resources.name_rules_disclaimer
+import org.neteinstein.pickaname.core.designsystem.resources.name_rules_footer
+import org.neteinstein.pickaname.core.designsystem.resources.name_rules_intro
+import org.neteinstein.pickaname.core.designsystem.resources.name_rules_link_pdf_description
+import org.neteinstein.pickaname.core.designsystem.resources.name_rules_link_pdf_title
+import org.neteinstein.pickaname.core.designsystem.resources.name_rules_link_register_birth_description
+import org.neteinstein.pickaname.core.designsystem.resources.name_rules_link_register_birth_title
+import org.neteinstein.pickaname.core.designsystem.resources.name_rules_link_rules_description
+import org.neteinstein.pickaname.core.designsystem.resources.name_rules_link_rules_title
+import org.neteinstein.pickaname.core.designsystem.resources.name_rules_title
+import org.neteinstein.pickaname.core.designsystem.resources.traditional_names_info_disclaimer
+import org.neteinstein.pickaname.core.designsystem.resources.traditional_names_info_intro
+import org.neteinstein.pickaname.core.designsystem.resources.traditional_names_info_rules
+import org.neteinstein.pickaname.core.designsystem.resources.traditional_names_info_title
 
 /**
  * Main screen: the full names list with gender/initial filters and a live match count. Reachable
@@ -147,7 +182,7 @@ fun NameListScreen(
     val searchEngine by viewModel.searchEngine.collectAsStateWithLifecycle()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
-    val autoRefreshFailedMessage = stringResource(R.string.name_list_auto_refresh_failed)
+    val autoRefreshFailedMessage = stringResource(Res.string.name_list_auto_refresh_failed)
     val listState = rememberLazyListState()
     var showRulesSheet by remember { mutableStateOf(false) }
     var showTraditionalNamesInfoSheet by remember { mutableStateOf(false) }
@@ -182,6 +217,7 @@ fun NameListScreen(
     }
 
     randomlyPickedName?.let { entry ->
+        val meaningQuery = stringResource(Res.string.name_meaning_search_query, entry.name)
         RandomNameDialog(
             entry = entry,
             onDismiss = { randomlyPickedName = null },
@@ -190,7 +226,7 @@ fun NameListScreen(
                 if (canLoadWebView(context)) {
                     nameMeaningSearch = entry
                 } else {
-                    openUrlInCustomTab(context, buildMeaningSearchUrl(context, entry, searchEngine))
+                    openUrlInCustomTab(context, buildMeaningSearchUrl(meaningQuery, searchEngine))
                 }
             }
         )
@@ -203,7 +239,7 @@ fun NameListScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = stringResource(R.string.app_name),
+                            text = stringResource(Res.string.app_name),
                             fontWeight = FontWeight.SemiBold
                         )
                     },
@@ -214,19 +250,19 @@ fun NameListScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Casino,
-                                contentDescription = stringResource(R.string.cd_random_name_icon)
+                                contentDescription = stringResource(Res.string.cd_random_name_icon)
                             )
                         }
                         IconButton(onClick = { showRulesSheet = true }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.HelpOutline,
-                                contentDescription = stringResource(R.string.cd_name_rules_icon)
+                                contentDescription = stringResource(Res.string.cd_name_rules_icon)
                             )
                         }
                         IconButton(onClick = onOpenSettings) {
                             Icon(
                                 imageVector = Icons.Filled.Settings,
-                                contentDescription = stringResource(R.string.cd_settings_icon)
+                                contentDescription = stringResource(Res.string.cd_settings_icon)
                             )
                         }
                     },
@@ -245,7 +281,7 @@ fun NameListScreen(
                 )
 
                 Text(
-                    text = stringResource(R.string.filter_section_gender),
+                    text = stringResource(Res.string.filter_section_gender),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp)
@@ -258,7 +294,7 @@ fun NameListScreen(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = stringResource(R.string.filter_section_other),
+                    text = stringResource(Res.string.filter_section_other),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp)
@@ -272,7 +308,7 @@ fun NameListScreen(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = stringResource(R.string.filter_section_initial),
+                    text = stringResource(Res.string.filter_section_initial),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp)
@@ -288,7 +324,7 @@ fun NameListScreen(
                     label = "nameCount"
                 ) { count ->
                     Text(
-                        text = pluralStringResource(R.plurals.name_count, count, count),
+                        text = pluralStringResource(Res.plurals.name_count, count, count),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium,
@@ -318,6 +354,8 @@ fun NameListScreen(
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 items(uiState.names, key = { it.id }) { entry ->
+                                    val meaningQuery =
+                                        stringResource(Res.string.name_meaning_search_query, entry.name)
                                     NameRow(
                                         entry = entry,
                                         modifier = Modifier.animateItem(),
@@ -327,7 +365,7 @@ fun NameListScreen(
                                             } else {
                                                 openUrlInCustomTab(
                                                     context,
-                                                    buildMeaningSearchUrl(context, entry, searchEngine)
+                                                    buildMeaningSearchUrl(meaningQuery, searchEngine)
                                                 )
                                             }
                                         }
@@ -384,18 +422,18 @@ private fun RulesBottomSheetContent() {
     val context = LocalContext.current
     val officialLinks = listOf(
         OfficialResourceLink(
-            title = stringResource(R.string.name_rules_link_rules_title),
-            description = stringResource(R.string.name_rules_link_rules_description),
+            title = stringResource(Res.string.name_rules_link_rules_title),
+            description = stringResource(Res.string.name_rules_link_rules_description),
             url = NAME_RULES_URL
         ),
         OfficialResourceLink(
-            title = stringResource(R.string.name_rules_link_pdf_title),
-            description = stringResource(R.string.name_rules_link_pdf_description),
+            title = stringResource(Res.string.name_rules_link_pdf_title),
+            description = stringResource(Res.string.name_rules_link_pdf_description),
             url = ALLOWED_NAMES_PDF_URL
         ),
         OfficialResourceLink(
-            title = stringResource(R.string.name_rules_link_register_birth_title),
-            description = stringResource(R.string.name_rules_link_register_birth_description),
+            title = stringResource(Res.string.name_rules_link_register_birth_title),
+            description = stringResource(Res.string.name_rules_link_register_birth_description),
             url = REGISTER_BIRTH_URL
         )
     )
@@ -409,16 +447,16 @@ private fun RulesBottomSheetContent() {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = stringResource(R.string.name_rules_title),
+            text = stringResource(Res.string.name_rules_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold
         )
         Text(
-            text = stringResource(R.string.name_rules_intro),
+            text = stringResource(Res.string.name_rules_intro),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        RulesDisclaimerCard(text = stringResource(R.string.name_rules_disclaimer))
+        RulesDisclaimerCard(text = stringResource(Res.string.name_rules_disclaimer))
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             officialLinks.forEach { link ->
                 OfficialResourceLinkRow(
@@ -428,7 +466,7 @@ private fun RulesBottomSheetContent() {
             }
         }
         Text(
-            text = stringResource(R.string.name_rules_footer),
+            text = stringResource(Res.string.name_rules_footer),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -506,18 +544,18 @@ private fun TraditionalNamesInfoBottomSheetContent() {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = stringResource(R.string.traditional_names_info_title),
+            text = stringResource(Res.string.traditional_names_info_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.SemiBold
         )
         Text(
-            text = stringResource(R.string.traditional_names_info_intro),
+            text = stringResource(Res.string.traditional_names_info_intro),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        RulesDisclaimerCard(text = stringResource(R.string.traditional_names_info_disclaimer))
+        RulesDisclaimerCard(text = stringResource(Res.string.traditional_names_info_disclaimer))
         Text(
-            text = stringResource(R.string.traditional_names_info_rules),
+            text = stringResource(Res.string.traditional_names_info_rules),
             style = MaterialTheme.typography.bodyMedium
         )
     }
@@ -546,11 +584,13 @@ private fun openUrlInCustomTab(context: Context, url: String) {
 }
 
 /**
- * A search for what [entry]'s name means using [engine], phrased in the app's current language.
+ * A search for a name's meaning using [engine], from an already-resolved [queryText] (callers
+ * read `name_meaning_search_query` with `stringResource` in composable scope - Compose
+ * Multiplatform resources have no synchronous non-composable read, unlike Android's
+ * `Context.getString`).
  * DuckDuckGo redirects straight to a Duck.ai chat answer (`ia=chat`) instead of plain results.
  */
-private fun buildMeaningSearchUrl(context: Context, entry: NameEntry, engine: SearchEngine): String {
-    val queryText = context.getString(R.string.name_meaning_search_query, entry.name)
+private fun buildMeaningSearchUrl(queryText: String, engine: SearchEngine): String {
     val builder = when (engine) {
         SearchEngine.GOOGLE -> "https://www.google.com/search".toUri().buildUpon()
             .appendQueryParameter("q", queryText)
@@ -664,13 +704,13 @@ private fun NameMeaningOverlay(entry: NameEntry?, searchEngine: SearchEngine, on
 /** Bottom sheet content: a search for [entry]'s meaning using [searchEngine], in an embedded WebView. */
 @Composable
 private fun NameMeaningBottomSheetContent(entry: NameEntry, searchEngine: SearchEngine) {
-    val context = LocalContext.current
-    val searchUrl = remember(entry, searchEngine) { buildMeaningSearchUrl(context, entry, searchEngine) }
+    val queryText = stringResource(Res.string.name_meaning_search_query, entry.name)
+    val searchUrl = remember(queryText, searchEngine) { buildMeaningSearchUrl(queryText, searchEngine) }
     var isLoading by remember { mutableStateOf(true) }
 
     Column(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f)) {
         Text(
-            text = stringResource(R.string.name_meaning_bottom_sheet_title, entry.name),
+            text = stringResource(Res.string.name_meaning_bottom_sheet_title, entry.name),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
@@ -743,7 +783,7 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        placeholder = { Text(stringResource(R.string.name_list_search_hint)) },
+        placeholder = { Text(stringResource(Res.string.name_list_search_hint)) },
         leadingIcon = {
             Icon(
                 imageVector = Icons.Filled.Search,
@@ -756,7 +796,7 @@ private fun SearchField(query: String, onQueryChange: (String) -> Unit) {
                 IconButton(onClick = { onQueryChange("") }) {
                     Icon(
                         imageVector = Icons.Filled.Close,
-                        contentDescription = stringResource(R.string.cd_clear_search)
+                        contentDescription = stringResource(Res.string.cd_clear_search)
                     )
                 }
             }
@@ -791,7 +831,7 @@ private fun EmptyState() {
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = stringResource(R.string.name_list_empty_state),
+                text = stringResource(Res.string.name_list_empty_state),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -811,10 +851,10 @@ private fun GenderFilterRow(selected: Gender?, onSelected: (Gender?) -> Unit) {
         FilterChip(
             selected = selected == null,
             onClick = { onSelected(null) },
-            label = { Text(stringResource(R.string.filter_gender_all)) }
+            label = { Text(stringResource(Res.string.filter_gender_all)) }
         )
         GenderFilterChip(
-            label = stringResource(R.string.gender_female),
+            label = stringResource(Res.string.gender_female),
             icon = Icons.Filled.Female,
             selected = selected == Gender.FEMALE,
             onClick = { onSelected(Gender.FEMALE) },
@@ -822,7 +862,7 @@ private fun GenderFilterRow(selected: Gender?, onSelected: (Gender?) -> Unit) {
             contentColor = extendedColors.onFemaleContainer
         )
         GenderFilterChip(
-            label = stringResource(R.string.gender_male),
+            label = stringResource(Res.string.gender_male),
             icon = Icons.Filled.Male,
             selected = selected == Gender.MALE,
             onClick = { onSelected(Gender.MALE) },
@@ -873,13 +913,13 @@ private fun OtherFiltersRow(
         FilterChip(
             selected = traditionalOnly,
             onClick = { onTraditionalOnlyChanged(!traditionalOnly) },
-            label = { Text(stringResource(R.string.filter_traditional_names)) },
+            label = { Text(stringResource(Res.string.filter_traditional_names)) },
             modifier = Modifier.padding(start = 8.dp)
         )
         IconButton(onClick = onTraditionalNamesInfoClick) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.HelpOutline,
-                contentDescription = stringResource(R.string.cd_traditional_names_info_icon),
+                contentDescription = stringResource(Res.string.cd_traditional_names_info_icon),
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -899,7 +939,7 @@ private fun InitialFilterRow(selected: Char?, onSelected: (Char?) -> Unit) {
             FilterChip(
                 selected = selected == null,
                 onClick = { onSelected(null) },
-                label = { Text(stringResource(R.string.filter_initial_all)) }
+                label = { Text(stringResource(Res.string.filter_initial_all)) }
             )
         }
         items(('A'..'Z').toList()) { letter ->
@@ -955,7 +995,7 @@ private fun LetterFastScroller(
     var touchYPx by remember { mutableFloatStateOf(0f) }
     var stripHeightPx by remember { mutableFloatStateOf(0f) }
     val haptics = LocalHapticFeedback.current
-    val fastScrollerDescription = stringResource(R.string.cd_letter_fast_scroller)
+    val fastScrollerDescription = stringResource(Res.string.cd_letter_fast_scroller)
 
     LaunchedEffect(scrollTargetIndex) {
         scrollTargetIndex?.let { listState.scrollToItem(it) }

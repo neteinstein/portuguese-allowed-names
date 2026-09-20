@@ -8,7 +8,6 @@ import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.neteinstein.pickaname.core.designsystem.R
 
 /**
  * End-to-end smoke test: the app must launch to the branded splash screen without crashing,

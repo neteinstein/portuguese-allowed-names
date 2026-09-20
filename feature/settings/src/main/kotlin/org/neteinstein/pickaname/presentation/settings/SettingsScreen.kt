@@ -56,14 +56,40 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
-import org.neteinstein.pickaname.core.designsystem.R
 import org.neteinstein.pickaname.domain.model.RefreshPeriod
 import org.neteinstein.pickaname.domain.model.SearchEngine
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
+import org.neteinstein.pickaname.core.designsystem.resources.Res
+import org.neteinstein.pickaname.core.designsystem.resources.cd_back
+import org.neteinstein.pickaname.core.designsystem.resources.refresh_period_bi_yearly
+import org.neteinstein.pickaname.core.designsystem.resources.refresh_period_monthly
+import org.neteinstein.pickaname.core.designsystem.resources.refresh_period_quarterly
+import org.neteinstein.pickaname.core.designsystem.resources.refresh_period_weekly
+import org.neteinstein.pickaname.core.designsystem.resources.refresh_period_yearly
+import org.neteinstein.pickaname.core.designsystem.resources.search_engine_brave
+import org.neteinstein.pickaname.core.designsystem.resources.search_engine_duckduckgo
+import org.neteinstein.pickaname.core.designsystem.resources.search_engine_google
+import org.neteinstein.pickaname.core.designsystem.resources.settings_language_button
+import org.neteinstein.pickaname.core.designsystem.resources.settings_language_description
+import org.neteinstein.pickaname.core.designsystem.resources.settings_language_section
+import org.neteinstein.pickaname.core.designsystem.resources.settings_refresh_description
+import org.neteinstein.pickaname.core.designsystem.resources.settings_refresh_period_label
+import org.neteinstein.pickaname.core.designsystem.resources.settings_refresh_section
+import org.neteinstein.pickaname.core.designsystem.resources.settings_reset
+import org.neteinstein.pickaname.core.designsystem.resources.settings_save
+import org.neteinstein.pickaname.core.designsystem.resources.settings_search_engine_description
+import org.neteinstein.pickaname.core.designsystem.resources.settings_search_engine_label
+import org.neteinstein.pickaname.core.designsystem.resources.settings_search_engine_section
+import org.neteinstein.pickaname.core.designsystem.resources.settings_source_description
+import org.neteinstein.pickaname.core.designsystem.resources.settings_source_section
+import org.neteinstein.pickaname.core.designsystem.resources.settings_source_url_error
+import org.neteinstein.pickaname.core.designsystem.resources.settings_source_url_label
+import org.neteinstein.pickaname.core.designsystem.resources.settings_title
 
 /**
  * Settings screen: link out to the OS per-app language picker, a dropdown for which search
@@ -105,7 +131,7 @@ fun SettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = stringResource(R.string.settings_title),
+                        text = stringResource(Res.string.settings_title),
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.clickable {
                             titleTapCount++
@@ -119,7 +145,7 @@ fun SettingsScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.cd_back)
+                            contentDescription = stringResource(Res.string.cd_back)
                         )
                     }
                 }
@@ -143,27 +169,27 @@ fun SettingsScreen(
             ) {
                 SettingsSectionCard(
                     icon = Icons.Filled.Language,
-                    title = stringResource(R.string.settings_language_section),
-                    description = stringResource(R.string.settings_language_description)
+                    title = stringResource(Res.string.settings_language_section),
+                    description = stringResource(Res.string.settings_language_description)
                 ) {
                     OutlinedButton(
                         onClick = { openAppLocaleSettings(context) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(stringResource(R.string.settings_language_button))
+                        Text(stringResource(Res.string.settings_language_button))
                     }
                 }
 
                 if (searchEngineSectionVisible) {
                     SettingsSectionCard(
                         icon = Icons.Filled.Search,
-                        title = stringResource(R.string.settings_search_engine_section),
-                        description = stringResource(R.string.settings_search_engine_description)
+                        title = stringResource(Res.string.settings_search_engine_section),
+                        description = stringResource(Res.string.settings_search_engine_description)
                     ) {
                         EnumDropdown(
                             selected = uiState.searchEngine,
                             options = SearchEngine.entries,
-                            label = stringResource(R.string.settings_search_engine_label),
+                            label = stringResource(Res.string.settings_search_engine_label),
                             optionLabel = { stringResource(it.labelRes()) },
                             onSelected = viewModel::onSearchEngineSelected
                         )
@@ -172,18 +198,18 @@ fun SettingsScreen(
 
                 SettingsSectionCard(
                     icon = Icons.Filled.Link,
-                    title = stringResource(R.string.settings_source_section),
-                    description = stringResource(R.string.settings_source_description)
+                    title = stringResource(Res.string.settings_source_section),
+                    description = stringResource(Res.string.settings_source_description)
                 ) {
                     OutlinedTextField(
                         value = uiState.sourceUrl,
                         onValueChange = viewModel::onUrlChange,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.settings_source_url_label)) },
+                        label = { Text(stringResource(Res.string.settings_source_url_label)) },
                         isError = uiState.urlError,
                         supportingText = {
                             if (uiState.urlError) {
-                                Text(stringResource(R.string.settings_source_url_error))
+                                Text(stringResource(Res.string.settings_source_url_error))
                             }
                         },
                         singleLine = true
@@ -198,26 +224,26 @@ fun SettingsScreen(
                             onClick = viewModel::onReset,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text(stringResource(R.string.settings_reset))
+                            Text(stringResource(Res.string.settings_reset))
                         }
                         Button(
                             onClick = viewModel::onSave,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text(stringResource(R.string.settings_save))
+                            Text(stringResource(Res.string.settings_save))
                         }
                     }
                 }
 
                 SettingsSectionCard(
                     icon = Icons.Filled.Schedule,
-                    title = stringResource(R.string.settings_refresh_section),
-                    description = stringResource(R.string.settings_refresh_description)
+                    title = stringResource(Res.string.settings_refresh_section),
+                    description = stringResource(Res.string.settings_refresh_description)
                 ) {
                     EnumDropdown(
                         selected = uiState.refreshPeriod,
                         options = RefreshPeriod.entries,
-                        label = stringResource(R.string.settings_refresh_period_label),
+                        label = stringResource(Res.string.settings_refresh_period_label),
                         optionLabel = { stringResource(it.labelRes()) },
                         onSelected = viewModel::onRefreshPeriodSelected
                     )
@@ -316,18 +342,18 @@ private fun <T> EnumDropdown(
     }
 }
 
-private fun RefreshPeriod.labelRes(): Int = when (this) {
-    RefreshPeriod.WEEKLY -> R.string.refresh_period_weekly
-    RefreshPeriod.MONTHLY -> R.string.refresh_period_monthly
-    RefreshPeriod.QUARTERLY -> R.string.refresh_period_quarterly
-    RefreshPeriod.BI_YEARLY -> R.string.refresh_period_bi_yearly
-    RefreshPeriod.YEARLY -> R.string.refresh_period_yearly
+private fun RefreshPeriod.labelRes(): StringResource = when (this) {
+    RefreshPeriod.WEEKLY -> Res.string.refresh_period_weekly
+    RefreshPeriod.MONTHLY -> Res.string.refresh_period_monthly
+    RefreshPeriod.QUARTERLY -> Res.string.refresh_period_quarterly
+    RefreshPeriod.BI_YEARLY -> Res.string.refresh_period_bi_yearly
+    RefreshPeriod.YEARLY -> Res.string.refresh_period_yearly
 }
 
-private fun SearchEngine.labelRes(): Int = when (this) {
-    SearchEngine.GOOGLE -> R.string.search_engine_google
-    SearchEngine.DUCKDUCKGO -> R.string.search_engine_duckduckgo
-    SearchEngine.BRAVE -> R.string.search_engine_brave
+private fun SearchEngine.labelRes(): StringResource = when (this) {
+    SearchEngine.GOOGLE -> Res.string.search_engine_google
+    SearchEngine.DUCKDUCKGO -> Res.string.search_engine_duckduckgo
+    SearchEngine.BRAVE -> Res.string.search_engine_brave
 }
 
 private fun openAppLocaleSettings(context: Context) {

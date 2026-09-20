@@ -38,15 +38,18 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
-import org.neteinstein.pickaname.core.designsystem.R
 import org.neteinstein.pickaname.presentation.theme.PickANameGradients
 import org.neteinstein.pickaname.presentation.theme.SplashTitleStyle
+import org.jetbrains.compose.resources.stringResource
+import org.neteinstein.pickaname.core.designsystem.resources.Res
+import org.neteinstein.pickaname.core.designsystem.resources.app_name
+import org.neteinstein.pickaname.core.designsystem.resources.splash_tagline
+import org.neteinstein.pickaname.core.designsystem.resources.splash_unofficial_disclaimer
 
 /**
  * First screen shown on app launch. Purely a branded loading moment: it decides (via
@@ -151,21 +154,21 @@ private fun SplashContent(@DrawableRes logoRes: Int) {
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = stringResource(R.string.app_name),
+                        text = stringResource(Res.string.app_name),
                         style = SplashTitleStyle,
                         color = Color.White,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = stringResource(R.string.splash_tagline),
+                        text = stringResource(Res.string.splash_tagline),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.85f),
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = stringResource(R.string.splash_unofficial_disclaimer),
+                        text = stringResource(Res.string.splash_unofficial_disclaimer),
                         style = MaterialTheme.typography.labelSmall,
                         color = Color.White.copy(alpha = 0.7f),
                         textAlign = TextAlign.Center

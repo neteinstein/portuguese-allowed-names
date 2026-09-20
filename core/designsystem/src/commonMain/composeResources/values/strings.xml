@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App identity (also used as the splash screen title) -->
-    <string name="app_name">Portugal\'s Approved Names</string>
+    <string name="app_name">Portugal's Approved Names</string>
     <string name="splash_tagline">List of approved Portuguese First Names</string>
     <string name="splash_unofficial_disclaimer">Unofficial app — not affiliated with the Government of Portugal</string>
 
     <!-- Sync / loading screen -->
     <string name="sync_loading_title">Loading names…</string>
-    <string name="sync_loading_message">We\'re downloading and preparing the official list of Portuguese names. This only takes a moment.</string>
+    <string name="sync_loading_message">We're downloading and preparing the official list of Portuguese names. This only takes a moment.</string>
     <string name="sync_error_title">Something went wrong</string>
-    <string name="sync_error_network">Couldn\'t reach the names source. Check your internet connection and try again.</string>
-    <string name="sync_error_invalid_source">The configured source doesn\'t look like a valid names list.</string>
+    <string name="sync_error_network">Couldn't reach the names source. Check your internet connection and try again.</string>
+    <string name="sync_error_invalid_source">The configured source doesn't look like a valid names list.</string>
     <string name="sync_error_no_names_found">No names were found in the configured source.</string>
     <string name="sync_error_unknown">An unexpected error occurred.</string>
     <string name="sync_retry">Retry</string>
@@ -27,34 +27,34 @@
     <string name="gender_female">Female</string>
     <string name="gender_male">Male</string>
     <string name="name_list_empty_state">No names match your filters.</string>
-    <string name="name_list_auto_refresh_failed">Couldn\'t update the names list. We\'ll try again next time you open the app.</string>
+    <string name="name_list_auto_refresh_failed">Couldn't update the names list. We'll try again next time you open the app.</string>
     <string name="name_rules_title">Official resources</string>
     <string name="name_rules_intro">For the exact legal rules, the full list of allowed names, and how to register a birth, use these official Portuguese Government resources.</string>
-    <string name="name_rules_disclaimer">These links open official Government of Portugal websites in your browser. Portugal\'s Approved Names is an independent app and is not official, endorsed by, or affiliated with the Portuguese Government or the IRN.</string>
+    <string name="name_rules_disclaimer">These links open official Government of Portugal websites in your browser. Portugal's Approved Names is an independent app and is not official, endorsed by, or affiliated with the Portuguese Government or the IRN.</string>
     <string name="name_rules_link_rules_title">Name rules</string>
     <string name="name_rules_link_rules_description">Official IRN page explaining which first and last names are legally accepted.</string>
     <string name="name_rules_link_pdf_title">Allowed names (PDF)</string>
     <string name="name_rules_link_pdf_description">Full official list of allowed first names, published by the IRN.</string>
     <string name="name_rules_link_register_birth_title">How to register a birth</string>
-    <string name="name_rules_link_register_birth_description">Official Government guide on registering a newborn\'s birth in Portugal.</string>
+    <string name="name_rules_link_register_birth_description">Official Government guide on registering a newborn's birth in Portugal.</string>
     <string name="name_rules_footer">For unusual or borderline cases, the final answer always comes from the Portuguese civil registry / IRN.</string>
     <string name="traditional_names_info_title">Traditional Portuguese names</string>
-    <string name="traditional_names_info_intro">The IRN (Portugal\'s civil registry authority) doesn\'t publish any list or flag identifying which names are considered \"traditional\" Portuguese names. This filter is only a best-effort approximation, not an official classification.</string>
+    <string name="traditional_names_info_intro">The IRN (Portugal's civil registry authority) doesn't publish any list or flag identifying which names are considered "traditional" Portuguese names. This filter is only a best-effort approximation, not an official classification.</string>
     <string name="traditional_names_info_disclaimer">Treat this filter as a rough guide, not a definitive answer. Some traditional names may be hidden, and some hidden names may still be traditional.</string>
-    <string name="traditional_names_info_rules">As a best effort, a name is shown when it matches a curated list of well-known classic Portuguese names, or otherwise when it follows Portuguese spelling patterns: no K, Y or W; no \"ph\", \"th\", \"sh\" or \"tz\"; every \"q\" is followed by \"u\"; it doesn\'t start with \"s\" followed directly by a consonant; it doesn\'t end in a consonant other than \"l\", \"r\", \"s\", \"z\", \"m\" or \"n\"; and it has no doubled letters other than the native \"rr\"/\"ss\" — not even repeated vowels like \"aa\" or \"ee\".</string>
+    <string name="traditional_names_info_rules">As a best effort, a name is shown when it matches a curated list of well-known classic Portuguese names, or otherwise when it follows Portuguese spelling patterns: no K, Y or W; no "ph", "th", "sh" or "tz"; every "q" is followed by "u"; it doesn't start with "s" followed directly by a consonant; it doesn't end in a consonant other than "l", "r", "s", "z", "m" or "n"; and it has no doubled letters other than the native "rr"/"ss" — not even repeated vowels like "aa" or "ee".</string>
     <string name="cd_settings_icon">Settings</string>
     <string name="cd_name_rules_icon">Name rules</string>
     <string name="cd_traditional_names_info_icon">About the traditional names filter</string>
     <string name="cd_random_name_icon">Pick a random name</string>
     <string name="cd_clear_search">Clear search</string>
     <string name="cd_letter_fast_scroller">Drag to jump to a letter</string>
-    <string name="name_meaning_search_query">What\'s the meaning of the name %1$s</string>
+    <string name="name_meaning_search_query">What's the meaning of the name %1$s</string>
     <string name="name_meaning_bottom_sheet_title">Discovering the meaning of the name %1$s</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Settings</string>
     <string name="settings_language_section">Language</string>
-    <string name="settings_language_description">Portugal\'s Approved Names follows your device language. Tap below to change it in the Android settings.</string>
+    <string name="settings_language_description">Portugal's Approved Names follows your device language. Tap below to change it in the Android settings.</string>
     <string name="settings_language_button">Change app language</string>
 
     <!-- Settings screen: name search -->
@@ -87,7 +87,7 @@
 
     <!-- Plurals -->
     <plurals name="name_count">
-        <item quantity="one">%d name</item>
-        <item quantity="other">%d names</item>
+        <item quantity="one">%1$d name</item>
+        <item quantity="other">%1$d names</item>
     </plurals>
 </resources>

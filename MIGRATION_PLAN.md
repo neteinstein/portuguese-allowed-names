@@ -573,6 +573,55 @@ The pdf.js work above is not wasted either way: it's what makes a
 user-supplied, CORS-enabled URL (and a future "open a local PDF" file
 picker) work on web.
 
+**The UI layer's strings are now Compose Multiplatform resources**, which is
+the step that unblocks moving the feature modules themselves off Android.
+`core:designsystem`'s `androidMain/res/values{,-pt}/strings.xml` moved to
+`commonMain/composeResources/values{,-pt}/strings.xml`, the generated `Res`
+class is made public (`compose.resources { publicResClass = true }`) so
+every feature module can reach it, and all ~73 `stringResource(R.string.x)`
+call sites across the four feature screens became
+`stringResource(Res.string.x)`. `GenderTag` moved from `androidMain` to
+`commonMain` at the same time - the two things that kept it Android-only
+(the `@StringRes` overload and material-icons-extended) are both solved
+here, the icons by switching to `org.jetbrains.compose.material:material-
+icons-extended`, which is multiplatform and, on Android, resolves to the
+androidx artifact anyway. It's pinned at 1.7.3 because JetBrains stopped
+publishing that artifact after 1.7.3 while Compose Multiplatform itself
+moved on; the icons are plain `ImageVector`s, so the version skew is inert.
+
+Feature modules are still `com.android.library` after this step - they get
+the resources runtime transitively from `core:designsystem` (`api(compose.
+components.resources)`), so nothing forced them to become KMP yet. Turning
+each one into a real KMP module is the next step, and it is now a
+module-shaped change rather than a resource-system change.
+
+Three things this surfaced that only running the app could have shown, all
+fixed:
+- **Android's backslash escaping is not Compose Multiplatform's.** `\'` and
+  `\"` came through literally - the title bar read `Portugal\'s Approved
+  Names`. Compose resources take the XML text as-is, so every escape was
+  removed.
+- **Only positional format args are substituted.** The plurals entry's bare
+  `%d` rendered as the literal text "%d names"; `%1$d` works. (The
+  `%1$s`-style args elsewhere were already fine.)
+- **`Context.getString` has no non-composable Compose-resources
+  equivalent.** `NameListScreen.buildMeaningSearchUrl` read the search-query
+  string off a `Context` inside a click handler; it now takes the resolved
+  text, read with `stringResource` in composable scope by each of its three
+  call sites.
+
+`app_name` is the one string deliberately duplicated: `AndroidManifest.xml`'s
+`android:label` can only read a classic Android resource, so a two-entry
+`app/src/main/res/values{,-pt}/strings.xml` now holds the launcher label
+while the in-UI app name comes from the shared Compose resources.
+
+Verified on a running emulator (API 36), not just by building: the list
+screen renders 7,481 names with correct `GenderTag` badges and a correctly
+formatted "7481 names" count, the apostrophes render properly, and
+switching the app locale to `pt-PT` (`cmd locale set-app-locales`) shows the
+whole UI - list and settings screens - in Portuguese from
+`composeResources/values-pt`, plural included.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**

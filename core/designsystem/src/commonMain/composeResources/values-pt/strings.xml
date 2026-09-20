@@ -39,9 +39,9 @@
     <string name="name_rules_link_register_birth_description">Guia oficial do Governo sobre como registar o nascimento de um recém-nascido em Portugal.</string>
     <string name="name_rules_footer">Nos casos invulgares ou de fronteira, a resposta definitiva cabe sempre ao registo civil / IRN.</string>
     <string name="traditional_names_info_title">Nomes tradicionais portugueses</string>
-    <string name="traditional_names_info_intro">O IRN (a entidade responsável pelo registo civil em Portugal) não publica qualquer lista ou indicação de quais os nomes considerados \"tradicionais\" portugueses. Este filtro é apenas uma aproximação feita com base no melhor esforço, e não uma classificação oficial.</string>
+    <string name="traditional_names_info_intro">O IRN (a entidade responsável pelo registo civil em Portugal) não publica qualquer lista ou indicação de quais os nomes considerados "tradicionais" portugueses. Este filtro é apenas uma aproximação feita com base no melhor esforço, e não uma classificação oficial.</string>
     <string name="traditional_names_info_disclaimer">Trate este filtro como uma indicação aproximada, não como uma resposta definitiva. Alguns nomes tradicionais podem ficar ocultos, e alguns nomes ocultos podem, ainda assim, ser tradicionais.</string>
-    <string name="traditional_names_info_rules">Como melhor esforço, um nome é apresentado quando corresponde a uma lista selecionada de nomes portugueses clássicos bem conhecidos ou, caso contrário, quando segue os padrões ortográficos portugueses: sem K, Y ou W; sem as grafias \"ph\", \"th\", \"sh\" ou \"tz\"; todo \"q\" seguido de \"u\"; sem começar por \"s\" seguido diretamente de consoante; sem terminar numa consoante que não seja \"l\", \"r\", \"s\", \"z\", \"m\" ou \"n\"; e sem letras duplicadas além das nativas \"rr\"/\"ss\" — incluindo vogais repetidas como \"aa\" ou \"ee\".</string>
+    <string name="traditional_names_info_rules">Como melhor esforço, um nome é apresentado quando corresponde a uma lista selecionada de nomes portugueses clássicos bem conhecidos ou, caso contrário, quando segue os padrões ortográficos portugueses: sem K, Y ou W; sem as grafias "ph", "th", "sh" ou "tz"; todo "q" seguido de "u"; sem começar por "s" seguido diretamente de consoante; sem terminar numa consoante que não seja "l", "r", "s", "z", "m" ou "n"; e sem letras duplicadas além das nativas "rr"/"ss" — incluindo vogais repetidas como "aa" ou "ee".</string>
     <string name="cd_settings_icon">Definições</string>
     <string name="cd_name_rules_icon">Regras dos nomes</string>
     <string name="cd_traditional_names_info_icon">Sobre o filtro de nomes tradicionais</string>
@@ -87,9 +87,9 @@
 
     <!-- Plurais -->
     <plurals name="name_count">
-        <item quantity="one">%d nome</item>
-        <item quantity="many">%d nomes</item>
-        <item quantity="other">%d nomes</item>
+        <item quantity="one">%1$d nome</item>
+        <item quantity="many">%1$d nomes</item>
+        <item quantity="other">%1$d nomes</item>
     </plurals>
 
 </resources>

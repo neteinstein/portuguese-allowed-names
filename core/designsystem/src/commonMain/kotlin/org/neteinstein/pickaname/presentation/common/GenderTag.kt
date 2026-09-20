@@ -15,9 +15,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import org.neteinstein.pickaname.core.designsystem.R
+import org.jetbrains.compose.resources.stringResource
+import org.neteinstein.pickaname.core.designsystem.resources.Res
+import org.neteinstein.pickaname.core.designsystem.resources.gender_female
+import org.neteinstein.pickaname.core.designsystem.resources.gender_male
 import org.neteinstein.pickaname.domain.model.Gender
 import org.neteinstein.pickaname.presentation.theme.PickANameTheme
 
@@ -41,8 +43,8 @@ fun GenderTag(gender: Gender, modifier: Modifier = Modifier) {
         Gender.MALE -> extendedColors.onMaleContainer
     }
     val label = when (gender) {
-        Gender.FEMALE -> stringResource(R.string.gender_female)
-        Gender.MALE -> stringResource(R.string.gender_male)
+        Gender.FEMALE -> stringResource(Res.string.gender_female)
+        Gender.MALE -> stringResource(Res.string.gender_male)
     }
     val icon = when (gender) {
         Gender.FEMALE -> Icons.Filled.Female
