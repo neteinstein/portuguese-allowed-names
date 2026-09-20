@@ -673,6 +673,85 @@ name-meaning path directly: tapping a name still opens the in-app WebView
 sheet, with the hand-rolled percent-encoding producing the same search URL
 (apostrophe included) the `Uri.Builder` did.
 
+**`composeApp` is now the real app shell, and the web build runs the whole
+app.** This is the step where the migration stops being structural and
+starts being visible:
+- **`core:navigation`** finally exists, holding `Routes` and
+  `NavTransitions`. The dependency that blocked it in Phase 0 - `Routes`
+  needing `SyncOrigin` from `feature:sync` - is gone because `SyncOrigin`
+  moved *here*: it only ever picked a distinct route, and the sync screen
+  never reads it, so navigation is where it belongs. Navigation itself is
+  now JetBrains' multiplatform `navigation-compose`.
+- **`PickANameNavHost` and the whole Koin graph moved into `composeApp`**,
+  which is the one module allowed to see every feature. `appModules()`
+  assembles repositories + use cases + view models (all shared) plus an
+  `expect fun platformModule()`: Room/SharedPreferences/CIO on Android,
+  `localStorage`/`StorageSettings`/Ktor-JS in the browser. Both shells -
+  `:app`'s `PickANameApplication` and `webApp`'s `main()` - register exactly
+  the same list.
+- **`:app` is now a thin Android shell**: `MainActivity`, the manifest,
+  launcher resources, Koin startup. Its leftover domain/use-case tests
+  (deferred since Phase 1) moved with their code into `core:domain`'s
+  `androidUnitTest`, and `TraditionalNameRulesTest` was ported to
+  `kotlin.test` in `core:model`'s `commonTest`, where it now runs on both
+  targets. `androidApp` became a real second shell (its own Application and
+  Koin startup) so the side-by-side comparison Phase 7 needs actually works.
+
+Three web-only problems surfaced, all of which only a running browser could
+have shown:
+1. **Compose version skew → `IrLinkageError` at runtime.** JetBrains'
+   lifecycle 2.9.6 and navigation 2.9.2 pull Compose 1.10.x transitively,
+   while the plugin still pinned **1.8.2** - the app compiled fine and then
+   died on `ComposeViewport` not existing with that signature. Fixed by
+   moving Compose Multiplatform to **1.10.2**, which is still fine under
+   this repo's AGP 8.13.2 / compileSdk 36 (Android build, unit tests and
+   lint all re-verified). Worth remembering for later bumps: the *runtime*
+   is what the transitive AndroidX-multiplatform artifacts decide, so the
+   plugin version has to keep up with them.
+2. **webpack failed the build over Skiko's dynamic exports.** As soon as a
+   real ESM npm package (pdf.js) is in the bundle, webpack's
+   `exportsPresence` check turns `export 'skikoApi' was not found in
+   './skiko.mjs'` from a warning into an error.
+   `webApp/webpack.config.d/skiko-exports.js` downgrades that one check.
+3. **A failed browser `fetch` is not an `Exception`.** `NameSyncRepositoryImpl`
+   caught `Exception`, but Kotlin/Wasm surfaces a rejected fetch as
+   `JsException`, which extends `Throwable` directly - so a CORS failure
+   escaped the coroutine and the Sync screen span forever. Both catch
+   boundaries now catch `Throwable`, and the web build shows the real
+   "Couldn't reach the names source" error state instead.
+   (`index.html` also needed `html, body { height: 100% }`, or Compose sizes
+   its canvas to a thin strip.)
+
+Verified in a real browser (headless Chrome with software WebGL, serving the
+production `wasmJsBrowserDistribution`): splash → sync, Material 3 theming,
+typography, icons, Compose-resource strings and the error state all render,
+Koin resolves the browser-backed stores, and the sync attempt fails exactly
+the way R3 says it must. The distribution is ~16 MB uncompressed now that
+pdf.js is in it (R6).
+
+### R3 decision (made by the repo owner): ship a CI-generated snapshot
+
+Of the two options above, the chosen direction is **snapshot, not
+degrade**: a CI job fetches and parses the source PDF and publishes a small
+names file alongside the Pages site, the web build loads that same-origin
+file, and **the web Settings screen drops the sync/source controls
+entirely** (they'd be meaningless there). That is the next PR's work, not
+this one. What it needs:
+- a scheduled + `workflow_dispatch` GitHub Actions job that downloads the
+  PDF (**with a `User-Agent`** - the host 502s requests without one),
+  extracts text, runs `NameListTextParser`, and writes the snapshot;
+- a decision on where the parse runs: the cheapest honest option is a JVM
+  target for `core:parser` using Apache PDFBox, which is exactly what this
+  session already used as the reference implementation;
+- a snapshot loader behind the existing `NameSyncRepository` interface on
+  web (fetch + parse the snapshot, no PDF work in the browser), which also
+  means pdf.js stops being on the web critical path - keep it for a
+  user-supplied CORS-enabled URL, or drop it from the web bundle to reclaim
+  ~1.5 MB;
+- `feature:settings` hiding the source-URL and refresh-period cards on web,
+  the same way it already hides the language card
+  (`rememberAppLanguageSettingsLauncher()` returning null is the pattern).
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**

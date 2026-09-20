@@ -3,7 +3,23 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Pick-A-Name</title>
+    <title>Portugal's Approved Names</title>
+    <style>
+        /* Compose Multiplatform sizes its canvas to the body, so the body has to actually fill
+           the window - without this the whole app renders in a thin strip at the top. */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        body {
+            background-color: #FDFCFF;
+        }
+        @media (prefers-color-scheme: dark) {
+            body { background-color: #101418; }
+        }
+    </style>
 </head>
 <body>
     <script src="pickaname.js"></script>

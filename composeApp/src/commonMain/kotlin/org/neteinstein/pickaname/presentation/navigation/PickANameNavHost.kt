@@ -1,18 +1,16 @@
 package org.neteinstein.pickaname.presentation.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import org.neteinstein.pickaname.R
 import org.neteinstein.pickaname.presentation.namelist.NameListScreen
 import org.neteinstein.pickaname.presentation.settings.SettingsScreen
 import org.neteinstein.pickaname.presentation.splash.SplashScreen
-import org.neteinstein.pickaname.presentation.sync.SyncOrigin
 import org.neteinstein.pickaname.presentation.sync.SyncScreen
 
 /**
@@ -21,7 +19,10 @@ import org.neteinstein.pickaname.presentation.sync.SyncScreen
  * list with the whole back stack cleared, so the user never lands back on Splash/Sync via "back".
  */
 @Composable
-fun PickANameNavHost(navController: NavHostController = rememberNavController()) {
+fun PickANameNavHost(
+    logo: Painter,
+    navController: NavHostController = rememberNavController()
+) {
     NavHost(
         navController = navController,
         startDestination = Routes.SPLASH,
@@ -45,7 +46,7 @@ fun PickANameNavHost(navController: NavHostController = rememberNavController())
                         popUpTo(Routes.SPLASH) { inclusive = true }
                     }
                 },
-                logo = painterResource(R.drawable.ic_launcher_foreground)
+                logo = logo
             )
         }
         composable(

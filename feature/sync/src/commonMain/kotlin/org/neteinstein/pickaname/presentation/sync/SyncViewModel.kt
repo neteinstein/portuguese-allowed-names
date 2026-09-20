@@ -11,12 +11,6 @@ import org.neteinstein.pickaname.domain.model.SyncOutcome
 import org.neteinstein.pickaname.domain.usecase.GetSourceUrlUseCase
 import org.neteinstein.pickaname.domain.usecase.SyncNamesUseCase
 
-/** Where this sync run was triggered from — used only to pick a distinct nav-graph route. */
-enum class SyncOrigin {
-    ONBOARDING,
-    SETTINGS
-}
-
 sealed interface SyncUiState {
     data object Loading : SyncUiState
     data class Error(val reason: SyncFailureReason) : SyncUiState

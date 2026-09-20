@@ -21,7 +21,7 @@ koin-bom = "4.2.2"
 pdfbox-android = "2.0.27.0"
 core-splashscreen = "1.2.0"
 browser = "1.9.0"
-compose-multiplatform = "1.8.2"
+compose-multiplatform = "1.10.2"
 # JetBrains stopped publishing the multiplatform material-icons-extended after 1.7.3; the icons
 # themselves are just ImageVectors, and on Android this coordinate resolves to the androidx
 # artifact anyway, so it stays pinned here rather than tracking compose-multiplatform.
@@ -65,6 +65,7 @@ koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
 koin-android = { module = "io.insert-koin:koin-android" }
 koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose" }
 koin-test = { module = "io.insert-koin:koin-test" }
+koin-core = { module = "io.insert-koin:koin-core" }
 pdfbox-android = { module = "com.tom-roush:pdfbox-android", version.ref = "pdfbox-android" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "core-splashscreen" }
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
@@ -72,10 +73,12 @@ kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotl
 kotlinx-browser = { module = "org.jetbrains.kotlinx:kotlinx-browser", version.ref = "kotlinx-browser" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-client-js = { module = "io.ktor:ktor-client-js", version.ref = "ktor" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 multiplatform-settings = { module = "com.russhwolf:multiplatform-settings", version.ref = "multiplatform-settings" }
 multiplatform-settings-coroutines = { module = "com.russhwolf:multiplatform-settings-coroutines", version.ref = "multiplatform-settings" }
 multiplatform-settings-test = { module = "com.russhwolf:multiplatform-settings-test", version.ref = "multiplatform-settings" }
+multiplatform-settings-make-observable = { module = "com.russhwolf:multiplatform-settings-make-observable", version.ref = "multiplatform-settings" }
 compose-material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "compose-material-icons" }
 # JetBrains' multiplatform builds of AndroidX lifecycle/navigation: same package names and APIs as
 # the androidx artifacts (which is what they resolve to on Android), so moving a module to KMP

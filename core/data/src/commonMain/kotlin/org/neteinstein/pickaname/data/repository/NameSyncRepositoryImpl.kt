@@ -21,12 +21,18 @@ class NameSyncRepositoryImpl(
             remoteDataSource.downloadPdf(url)
         } catch (e: IllegalArgumentException) {
             return SyncOutcome.Error(SyncFailureReason.INVALID_SOURCE, e.message)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             // Anything else from the download step - a bad status code, a timeout, a genuine
             // connectivity failure - is treated as a network problem. Kept as a broad catch
             // (rather than a specific IOException type) so this stays portable across the Ktor
             // engines each platform uses, instead of depending on one platform's exception
             // hierarchy.
+            //
+            // Throwable, not Exception, and that difference is load-bearing on web: a failed
+            // browser fetch (a CORS rejection, say - see MIGRATION_PLAN.md risk R3) reaches
+            // Kotlin/Wasm as a `JsException`, which extends Throwable directly. Catching only
+            // Exception let it escape the coroutine, so the Sync screen sat on its spinner
+            // forever instead of showing the error state.
             return SyncOutcome.Error(SyncFailureReason.NETWORK, e.message)
         }
 
@@ -40,9 +46,10 @@ class NameSyncRepositoryImpl(
                 nameLocalDataSource.replaceAll(records)
                 SyncOutcome.Success(namesLoaded = records.size)
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             // Anything from a corrupt PDF, an unexpected document layout, or a DB failure is
-            // surfaced as a recoverable sync error rather than crashing the app.
+            // surfaced as a recoverable sync error rather than crashing the app. Throwable for
+            // the same reason as the download step above.
             SyncOutcome.Error(SyncFailureReason.INVALID_SOURCE, e.message)
         }
     }

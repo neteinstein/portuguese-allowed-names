@@ -36,7 +36,11 @@ android {
 
 dependencies {
     implementation(project(":composeApp"))
+    // PDFBoxResourceLoader.init() at startup, same as :app (exposed as api by core:parser).
+    implementation(project(":core:parser"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.ui)
+    implementation(platform(libs.koin.bom))
+    implementation(libs.koin.android)
 }

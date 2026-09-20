@@ -1,6 +1,14 @@
 package org.neteinstein.pickaname.presentation.navigation
 
-import org.neteinstein.pickaname.presentation.sync.SyncOrigin
+/**
+ * Where a sync run was triggered from - used only to pick a distinct nav-graph route, which is
+ * why it lives here rather than in `feature:sync` (a `core` module can't depend on a feature,
+ * and the sync screen itself never reads it).
+ */
+enum class SyncOrigin {
+    ONBOARDING,
+    SETTINGS
+}
 
 /** Central catalogue of nav-graph routes. Plain String routes — no kotlinx-serialization needed. */
 object Routes {
