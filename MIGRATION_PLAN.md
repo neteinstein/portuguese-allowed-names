@@ -401,6 +401,34 @@ Android today, and a future `composeApp` web DI module for `wasmJs`
 (needing `ktor-client-js`, not yet added to the version catalog since
 nothing consumes it yet).
 
+**`core:parser` is now a real KMP module too, but honestly incomplete** -
+this is the first Phase 3 module that couldn't be a pure source-set move.
+`NameListTextParser.kt`/`ParsedName.kt` are pure Kotlin (no Android
+imports) and moved into `commonMain` exactly like the previous two
+modules' code did. `PdfTextExtractor` is different: it directly calls
+`pdfbox-android` APIs, which is a real platform-specific implementation,
+not just Android-hosted common code - so it's now an
+`expect class PdfTextExtractor() { suspend fun extractText(...): String }`
+in `commonMain`, with:
+- an `androidMain actual` that's the exact same pdfbox-android code as
+  before, just relocated and marked `actual`;
+- a `wasmJsMain actual` that **throws `NotImplementedError`** rather than
+  attempting real `pdf.js` JS interop (risk R2) in this pass.
+
+Reasoning for stopping at a stub rather than writing the interop:
+`pdf.js` integration needs `external` declarations against its
+Promise-based API, a `<script>` tag in `webApp/index.html`, and bridging
+JS Promises into a Kotlin suspend function - all real code this sandbox
+has no way to verify. There's no browser here to run
+`wasmJsBrowserTest` or otherwise exercise it, so writing that interop now
+would be unverified guesswork masquerading as a real implementation,
+exactly the kind of "claim success without being able to test it" this
+project's own working norms rule out. The stub keeps the module
+compiling for `wasmJs` (CI *can* verify that much) while making the real
+gap explicit rather than silently faking web PDF parsing. Implementing
+`pdf.js` interop for real, and verifying it against the actual names-list
+PDF in a real browser, stays open Phase 3 work.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**
