@@ -207,6 +207,16 @@ multiplatform (Compose Multiplatform resources instead of `R.string`,
 `expect`/`actual` for the platform-specific bits) is Phase 3 work, same as
 the data layer's web actuals.
 
+**First CI round on Phase 2** caught one thing the string-centralization
+sweep missed: `SplashScreen.kt` (which stayed in `:app`, not moved) also
+uses `R.drawable.ic_launcher_foreground` - a real app-identity asset that
+correctly stays in `:app`, not `core:designsystem` (it's the launcher
+icon, not shared UI). Blanket-swapping its `R` import broke that one
+reference. Fixed by importing both: `org.neteinstein.pickaname.R as AppR`
+alongside the unaliased `core:designsystem` one, using `AppR.drawable...`
+for the launcher asset and the plain `R.string...` calls for everything
+else.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**

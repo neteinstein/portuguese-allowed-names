@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
+import org.neteinstein.pickaname.R as AppR
 import org.neteinstein.pickaname.core.designsystem.R
 import org.neteinstein.pickaname.presentation.theme.PickANameGradients
 import org.neteinstein.pickaname.presentation.theme.SplashTitleStyle
@@ -129,7 +130,7 @@ private fun SplashContent() {
                             .background(Color.White, CircleShape)
                     )
                     Image(
-                        painter = painterResource(R.drawable.ic_launcher_foreground),
+                        painter = painterResource(AppR.drawable.ic_launcher_foreground),
                         contentDescription = null,
                         modifier = Modifier.size(120.dp)
                     )

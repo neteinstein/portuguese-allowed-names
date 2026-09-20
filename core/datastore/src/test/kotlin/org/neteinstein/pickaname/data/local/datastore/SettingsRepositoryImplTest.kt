@@ -1,4 +1,7 @@
-@file:OptIn(com.russhwolf.settings.ExperimentalSettingsApi::class)
+@file:OptIn(
+    com.russhwolf.settings.ExperimentalSettingsApi::class,
+    kotlinx.coroutines.ExperimentalCoroutinesApi::class
+)
 
 package org.neteinstein.pickaname.data.local.datastore
 
