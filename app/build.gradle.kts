@@ -94,6 +94,7 @@ dependencies {
     implementation(project(":core:data"))
     implementation(project(":feature:settings"))
     implementation(project(":feature:sync"))
+    implementation(project(":feature:namelist"))
 
     // Core Android dependencies
     implementation(libs.androidx.core.ktx)
@@ -102,7 +103,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.splashscreen)
-    implementation(libs.androidx.browser)
 
     // Compose dependencies
     implementation(platform(libs.androidx.compose.bom))
