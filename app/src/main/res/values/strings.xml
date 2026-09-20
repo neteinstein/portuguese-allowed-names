@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App identity (also used as the splash screen title) -->
-    <string name="app_name">Allowed Names in Portugal</string>
+    <string name="app_name">Portugal\'s Approved Names</string>
     <string name="splash_tagline">List of approved Portuguese First Names</string>
     <string name="splash_unofficial_disclaimer">Unofficial app — not affiliated with the Government of Portugal</string>
 
@@ -30,7 +30,7 @@
     <string name="name_list_auto_refresh_failed">Couldn\'t update the names list. We\'ll try again next time you open the app.</string>
     <string name="name_rules_title">Official resources</string>
     <string name="name_rules_intro">For the exact legal rules, the full list of allowed names, and how to register a birth, use these official Portuguese Government resources.</string>
-    <string name="name_rules_disclaimer">These links open official Government of Portugal websites in your browser. Allowed Names in Portugal is an independent app and is not official, endorsed by, or affiliated with the Portuguese Government or the IRN.</string>
+    <string name="name_rules_disclaimer">These links open official Government of Portugal websites in your browser. Portugal\'s Approved Names is an independent app and is not official, endorsed by, or affiliated with the Portuguese Government or the IRN.</string>
     <string name="name_rules_link_rules_title">Name rules</string>
     <string name="name_rules_link_rules_description">Official IRN page explaining which first and last names are legally accepted.</string>
     <string name="name_rules_link_pdf_title">Allowed names (PDF)</string>
@@ -54,7 +54,7 @@
     <!-- Settings screen -->
     <string name="settings_title">Settings</string>
     <string name="settings_language_section">Language</string>
-    <string name="settings_language_description">Allowed Names in Portugal follows your device language. Tap below to change it in the Android settings.</string>
+    <string name="settings_language_description">Portugal\'s Approved Names follows your device language. Tap below to change it in the Android settings.</string>
     <string name="settings_language_button">Change app language</string>
 
     <!-- Settings screen: name search -->
