@@ -638,6 +638,37 @@ incrementally instead of as one large "move everything" commit.
   the actual merge. `release.yml` (Play Store) and `deploy-web.yml` (GitHub
   Pages) become the two release paths off the same `main`.
 
+### Phase 7 — Retire `:app` in favor of `composeApp`/`androidApp`
+Not part of the original six phases above - surfaced during Phase 2 (first
+called out in the `feature:splash` PR) as a prerequisite that got
+deferred out rather than folded into a feature extraction, since it's
+riskier and touches the release pipeline rather than just app code.
+Recorded here as its own explicit, last phase so it doesn't stay an
+unstated gap:
+
+- Move what's left in `:app` - `MainActivity`, `AndroidManifest.xml`,
+  launcher icon resources, `proguard-rules.pro`, the `di/*Module.kt` Koin
+  wiring, and `PickANameNavHost`/`Routes` (plus the nav-transition specs) -
+  into `androidApp` (thin Android launcher shell) and `composeApp` (the
+  one module allowed to see every feature module, per §3.1) respectively,
+  matching §3's original target module layout.
+- Delete the `:app` module and its `settings.gradle.kts` entry once
+  nothing references it.
+- Update `release.yml`, which is hardcoded to `app/` paths throughout:
+  the keystore decode target, the `versionName` bump `sed`/grep (currently
+  matched against `app/build.gradle.kts`), and the release APK/AAB output
+  paths (`app/build/outputs/...`). Also re-check `assembleRelease`/
+  `bundleRelease` (invoked bare, with no module prefix) still resolve
+  unambiguously once `androidApp` - not `:app` - is the only
+  `com.android.application` module in the graph.
+- Verify with an actual signed release build (or as close to one as CI
+  secrets allow) before calling this done - `release.yml` is what ships
+  to the Play Store, so this is the one Phase 7 step that's riskier to get
+  wrong than to leave alone, and it's the reason this work stayed out of
+  Phase 2 in the first place.
+- Only after this lands does `composeApp` stop being a Phase 0 placeholder
+  and start being the real app shell §3 always described it as.
+
 ## 6. Risk register
 
 - **R1 — No official Room support for wasmJs.** Mitigation: a small
