@@ -16,6 +16,10 @@ kotlin {
     wasmJs {
         browser()
     }
+    iosArm64()
+    iosSimulatorArm64()
+    // For the snapshot generator that runs in CI (see core:parser's jvm target).
+    jvm()
 
     sourceSets {
         commonTest.dependencies {

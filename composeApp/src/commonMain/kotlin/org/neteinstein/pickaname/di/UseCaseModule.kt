@@ -1,6 +1,7 @@
 package org.neteinstein.pickaname.di
 
 import org.koin.dsl.module
+import org.neteinstein.pickaname.domain.usecase.GetLastRefreshTimestampUseCase
 import org.neteinstein.pickaname.domain.usecase.GetRefreshPeriodUseCase
 import org.neteinstein.pickaname.domain.usecase.GetSearchEngineUseCase
 import org.neteinstein.pickaname.domain.usecase.GetSourceUrlUseCase
@@ -25,6 +26,7 @@ val useCaseModule = module {
     factory { UpdateSourceUrlUseCase(get()) }
     factory { ResetSourceUrlUseCase(get()) }
     factory { GetRefreshPeriodUseCase(get()) }
+    factory { GetLastRefreshTimestampUseCase(get()) }
     factory { UpdateRefreshPeriodUseCase(get()) }
     factory { GetSearchEngineUseCase(get()) }
     factory { UpdateSearchEngineUseCase(get()) }

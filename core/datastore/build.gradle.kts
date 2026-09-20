@@ -16,6 +16,8 @@ kotlin {
     wasmJs {
         browser()
     }
+    iosArm64()
+    iosSimulatorArm64()
 
     sourceSets {
         commonMain.dependencies {
@@ -27,6 +29,11 @@ kotlin {
             api(libs.multiplatform.settings)
             api(libs.multiplatform.settings.coroutines)
             implementation(libs.kotlinx.coroutines.core)
+        }
+        androidMain.dependencies {
+            // Read-only, and only for the one-time migration off the app's pre-Phase-1 settings
+            // file (LegacyDataStoreMigration) - nothing in the app writes DataStore any more.
+            implementation(libs.androidx.datastore.preferences)
         }
         val androidUnitTest by getting {
             dependencies {

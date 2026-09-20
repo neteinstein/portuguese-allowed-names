@@ -1,6 +1,9 @@
 package org.neteinstein.pickaname.app
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
 import org.neteinstein.pickaname.presentation.navigation.PickANameNavHost
 import org.neteinstein.pickaname.presentation.theme.PickANameTheme
@@ -18,6 +21,11 @@ import org.neteinstein.pickaname.presentation.theme.PickANameTheme
 @Composable
 fun App(logo: Painter) {
     PickANameTheme {
-        PickANameNavHost(logo = logo)
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Web-only, and only for Android visitors (see InstallAppBanner); draws nothing at
+            // all on Android, so the nav host keeps the full window there.
+            InstallAppBanner()
+            PickANameNavHost(logo = logo)
+        }
     }
 }

@@ -52,9 +52,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import org.neteinstein.pickaname.domain.model.RefreshPeriod
+import org.neteinstein.pickaname.domain.platform.PlatformCapabilities
 import org.neteinstein.pickaname.domain.model.SearchEngine
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -71,6 +74,11 @@ import org.neteinstein.pickaname.core.designsystem.resources.search_engine_googl
 import org.neteinstein.pickaname.core.designsystem.resources.settings_language_button
 import org.neteinstein.pickaname.core.designsystem.resources.settings_language_description
 import org.neteinstein.pickaname.core.designsystem.resources.settings_language_section
+import org.neteinstein.pickaname.core.designsystem.resources.settings_names_list_check_updates
+import org.neteinstein.pickaname.core.designsystem.resources.settings_names_list_description
+import org.neteinstein.pickaname.core.designsystem.resources.settings_names_list_never_updated
+import org.neteinstein.pickaname.core.designsystem.resources.settings_names_list_section
+import org.neteinstein.pickaname.core.designsystem.resources.settings_names_list_updated
 import org.neteinstein.pickaname.core.designsystem.resources.settings_refresh_description
 import org.neteinstein.pickaname.core.designsystem.resources.settings_refresh_period_label
 import org.neteinstein.pickaname.core.designsystem.resources.settings_refresh_section
@@ -194,6 +202,35 @@ fun SettingsScreen(
                     }
                 }
 
+                // Where the source isn't configurable there is still one thing worth saying:
+                // where the list came from and how current it is.
+                if (!PlatformCapabilities.canConfigureNamesSource) {
+                    SettingsSectionCard(
+                        icon = Icons.Filled.Link,
+                        title = stringResource(Res.string.settings_names_list_section),
+                        description = stringResource(Res.string.settings_names_list_description)
+                    ) {
+                        Text(
+                            text = uiState.lastRefreshTimestamp
+                                ?.let { stringResource(Res.string.settings_names_list_updated, it.toDisplayDate()) }
+                                ?: stringResource(Res.string.settings_names_list_never_updated),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Button(
+                            onClick = viewModel::onCheckForUpdates,
+                            modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+                        ) {
+                            Text(stringResource(Res.string.settings_names_list_check_updates))
+                        }
+                    }
+                }
+
+                // Both of these are meaningless where the app can't fetch the source itself:
+                // the web build reads a snapshot published alongside it (see
+                // PlatformCapabilities.canConfigureNamesSource and MIGRATION_PLAN.md risk R3),
+                // so there is no URL to point anywhere and nothing to re-check on a schedule.
+                if (PlatformCapabilities.canConfigureNamesSource) {
                 SettingsSectionCard(
                     icon = Icons.Filled.Link,
                     title = stringResource(Res.string.settings_source_section),
@@ -245,6 +282,7 @@ fun SettingsScreen(
                         optionLabel = { stringResource(it.labelRes()) },
                         onSelected = viewModel::onRefreshPeriodSelected
                     )
+                }
                 }
             }
         }
@@ -339,6 +377,15 @@ private fun <T> EnumDropdown(
         }
     }
 }
+
+/**
+ * The date part of an epoch-millis timestamp, as ISO `YYYY-MM-DD`. Deliberately not localised:
+ * that would mean a date-formatting dependency for one line of text, and an unambiguous ISO date
+ * reads correctly in both of this app's languages.
+ */
+@OptIn(ExperimentalTime::class)
+private fun Long.toDisplayDate(): String =
+    Instant.fromEpochMilliseconds(this).toString().substringBefore('T')
 
 private fun RefreshPeriod.labelRes(): StringResource = when (this) {
     RefreshPeriod.WEEKLY -> Res.string.refresh_period_weekly

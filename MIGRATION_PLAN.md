@@ -1161,7 +1161,7 @@ them in this phase were written by copying another module's file. The next
 structural change (a new target, an AGP bump, a compileSdk bump) has to be
 made 15 times by hand.
 
-### 9.3 The settings-store swap silently dropped existing users' preferences
+### 9.3 The settings-store swap silently dropped existing users' preferences — FIXED
 
 Phase 1 moved `SettingsRepositoryImpl` from DataStore Preferences to
 multiplatform-settings backed by `SharedPreferencesSettings("pick_a_name_
@@ -1170,11 +1170,20 @@ who already had the app installed, that resets the configured source URL,
 the refresh period and the last-refresh timestamp to defaults on first
 launch after the update (the reset timestamp also forces one extra sync).
 
-This already shipped (it went to `main` before this branch), so it can't be
-prevented now - but it should be recorded rather than discovered later from
-a user report, and the same care is owed to any future store swap. If the
-data matters, a one-time read of the old DataStore file on Android is still
-possible.
+This already shipped (it went to `main` before this branch), so it couldn't
+be prevented - but it *can* still be recovered, and now is:
+`core:datastore`'s `androidMain` has a one-time
+`migrateLegacyDataStoreSettings()` that reads the old
+`pick_a_name_settings.preferences_pb` file and copies the four keys across
+(they never changed name - only the backend did), then deletes it. It runs
+inside the `single<FlowSettings>` provider, before anything can read a
+setting, and starts with a `File.exists()` check so every launch after the
+first pays nothing. Existing values in the new store always win, and an
+unreadable legacy file is left in place rather than deleted - deleting data
+we failed to read once is the exact mistake being repaired here.
+
+The lesson for future store swaps stands: a backend change is a data
+migration, whether or not the keys move.
 
 ### 9.4 The snapshot decision (R3) needs a JVM target that doesn't exist yet
 
@@ -1223,9 +1232,15 @@ it is worth re-checking now: it passes locally on a real emulator).
   release JetBrains published. It works (icons are just `ImageVector`s) but
   it is a dead coordinate; a maintained icon source will be needed
   eventually.
-- **iOS** appears only as an aside in code comments. The plan should either
-  add it as a phase or state that it is out of scope, so the `expect`/
-  `actual` boundaries drawn now are judged against a stated intent.
+- **iOS** is no longer an aside: every KMP module now has `iosArm64` +
+  `iosSimulatorArm64` targets with real actuals (PDFKit for text
+  extraction, `NSUserDefaults` for both stores, Foundation's diacritic
+  folding, `UIApplication` for opening URLs and the per-app language
+  screen), `composeApp` exposes a `MainViewController()` entry point, and
+  CI links the framework and runs the shared tests on a simulator. What
+  does **not** exist is an Xcode project, so nothing has been *run* on iOS
+  - the checks prove it compiles, links and passes shared tests, which is
+  the honest limit without an app shell.
 - **No shared UI tests at all.** Compose Multiplatform supports
   `runComposeUiTest` in `commonTest`; the four feature modules currently
   have ViewModel tests only.

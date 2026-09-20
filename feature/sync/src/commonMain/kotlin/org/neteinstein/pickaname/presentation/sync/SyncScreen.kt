@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import org.neteinstein.pickaname.domain.model.SyncFailureReason
+import org.neteinstein.pickaname.domain.platform.PlatformCapabilities
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.neteinstein.pickaname.core.designsystem.resources.Res
@@ -228,17 +229,21 @@ private fun ErrorContent(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            OutlinedButton(
-                onClick = onEditSource,
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Edit,
-                    contentDescription = null,
-                    modifier = Modifier.size(ButtonDefaults.IconSize)
-                )
-                Spacer(modifier = Modifier.width(ButtonDefaults.IconSpacing))
-                Text(stringResource(Res.string.sync_edit_source))
+            // No source to edit on web - it reads the published snapshot (see
+            // PlatformCapabilities.canConfigureNamesSource), so retry is the only useful action.
+            if (PlatformCapabilities.canConfigureNamesSource) {
+                OutlinedButton(
+                    onClick = onEditSource,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Edit,
+                        contentDescription = null,
+                        modifier = Modifier.size(ButtonDefaults.IconSize)
+                    )
+                    Spacer(modifier = Modifier.width(ButtonDefaults.IconSpacing))
+                    Text(stringResource(Res.string.sync_edit_source))
+                }
             }
             Button(
                 onClick = onRetry,

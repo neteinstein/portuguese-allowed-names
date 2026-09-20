@@ -16,6 +16,8 @@ kotlin {
     wasmJs {
         browser()
     }
+    iosArm64()
+    iosSimulatorArm64()
 
     sourceSets {
         commonMain.dependencies {
@@ -24,6 +26,9 @@ kotlin {
             implementation(project(":core:network"))
             implementation(project(":core:parser"))
             implementation(project(":core:database"))
+            // SnapshotNameSyncRepository fetches the published snapshot itself, so this module
+            // needs Ktor's client API directly (core:network's data source is PDF-specific).
+            implementation(libs.ktor.client.core)
             implementation(libs.kotlinx.coroutines.core)
         }
         val androidUnitTest by getting {

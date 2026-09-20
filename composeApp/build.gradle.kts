@@ -18,6 +18,16 @@ kotlin {
     wasmJs {
         browser()
     }
+    // A real framework binary, not just compiled klibs: an iOS app shell imports this, and
+    // linking is what proves every actual in the graph is actually there (see MIGRATION_PLAN.md
+    // - there is no Xcode project in this repo yet, so linking is the strongest iOS check CI can
+    // run).
+    listOf(iosArm64(), iosSimulatorArm64()).forEach { iosTarget ->
+        iosTarget.binaries.framework {
+            baseName = "ComposeApp"
+            isStatic = true
+        }
+    }
 
     sourceSets {
         commonMain.dependencies {
@@ -58,6 +68,10 @@ kotlin {
             // hence koin-android's androidContext()) and the CIO engine.
             implementation(libs.koin.android)
             implementation(libs.ktor.client.cio)
+        }
+        iosMain.dependencies {
+            // Ktor's Apple engine (NSURLSession) - the iOS half of platformModule().
+            implementation(libs.ktor.client.darwin)
         }
         val wasmJsMain by getting {
             dependencies {

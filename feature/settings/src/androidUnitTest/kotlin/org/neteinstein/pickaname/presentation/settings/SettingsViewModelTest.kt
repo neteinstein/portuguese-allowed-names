@@ -13,6 +13,7 @@ import org.junit.Test
 import org.neteinstein.pickaname.domain.model.NamesSourceDefaults
 import org.neteinstein.pickaname.domain.model.RefreshPeriod
 import org.neteinstein.pickaname.domain.model.SearchEngine
+import org.neteinstein.pickaname.domain.usecase.GetLastRefreshTimestampUseCase
 import org.neteinstein.pickaname.domain.usecase.GetRefreshPeriodUseCase
 import org.neteinstein.pickaname.domain.usecase.GetSearchEngineUseCase
 import org.neteinstein.pickaname.domain.usecase.GetSourceUrlUseCase
@@ -32,22 +33,26 @@ class SettingsViewModelTest {
     private val updateSourceUrlUseCase: UpdateSourceUrlUseCase = mockk()
     private val resetSourceUrlUseCase: ResetSourceUrlUseCase = mockk()
     private val getRefreshPeriodUseCase: GetRefreshPeriodUseCase = mockk()
+    private val getLastRefreshTimestampUseCase: GetLastRefreshTimestampUseCase = mockk()
     private val updateRefreshPeriodUseCase: UpdateRefreshPeriodUseCase = mockk(relaxed = true)
     private val getSearchEngineUseCase: GetSearchEngineUseCase = mockk()
     private val updateSearchEngineUseCase: UpdateSearchEngineUseCase = mockk(relaxed = true)
 
     private fun createViewModel(
         refreshPeriod: RefreshPeriod = RefreshPeriod.DEFAULT,
-        searchEngine: SearchEngine = SearchEngine.DEFAULT
+        searchEngine: SearchEngine = SearchEngine.DEFAULT,
+        lastRefreshTimestamp: Long? = null
     ): SettingsViewModel {
         coEvery { getSourceUrlUseCase() } returns "https://current.example.com/list.pdf"
         coEvery { getRefreshPeriodUseCase() } returns refreshPeriod
         coEvery { getSearchEngineUseCase() } returns searchEngine
+        coEvery { getLastRefreshTimestampUseCase() } returns lastRefreshTimestamp
         return SettingsViewModel(
             getSourceUrlUseCase,
             updateSourceUrlUseCase,
             resetSourceUrlUseCase,
             getRefreshPeriodUseCase,
+            getLastRefreshTimestampUseCase,
             updateRefreshPeriodUseCase,
             getSearchEngineUseCase,
             updateSearchEngineUseCase
