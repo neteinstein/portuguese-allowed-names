@@ -166,6 +166,47 @@ Changed both to `api` in the two core modules - the correct fix, since
 these are exactly the "leaky by design" dependencies a consuming DI module
 needs, not implementation details to hide.
 
+Phase 1 finished fully green (Lint, Unit Tests, Build APK, Instrumented
+Tests, wasmJs build all passed; only the documented "Pages not enabled"
+failure remained).
+
+**Phase 2 (feature module extraction) is started**: `feature:settings` is
+the first of the four (settings → sync → namelist → splash, per §5's
+order - simplest and most self-contained first). Extracting it surfaced a
+real problem the data-layer extractions never hit: `SettingsScreen.kt`
+imports `org.neteinstein.pickaname.R` for its strings, and Android
+resources don't flow "backward" from `:app` into a library module `:app`
+depends on - `feature:settings` has no dependency edge to `:app`, so it
+can't see `:app`'s resources at all.
+
+Fix, done once so every later feature extraction is as mechanical as
+Phase 1's data-layer moves: **all of `app/src/main/res/values{,-pt}/
+strings.xml` moved into `core:designsystem/src/androidMain/res/`** (a
+shared module every feature already depends on for theming), rather than
+trying to carefully split strings per-feature - several strings
+(`cd_back`, the gender labels, etc.) are already shared across screens
+that haven't moved yet, so a per-feature split would've been fragile for
+little benefit in an app this size. Every file that imported
+`org.neteinstein.pickaname.R` (5 files - not just Settings, since Splash/
+Sync/NameList/GenderTag all still live in `:app` but need the same
+strings) now imports `org.neteinstein.pickaname.core.designsystem.R`
+instead; only the import line changed, no logic.
+
+Also added **`core:testing`**, a small shared module holding
+`MainDispatcherRule` (previously duplicated implicitly by living in
+`:app`'s own test source set) - every feature's ViewModel tests need it,
+so it moved to a shared module the same way `core:designsystem` now hosts
+shared strings, instead of copy-pasting it into each feature module.
+
+`feature:settings` itself is, like the Phase 1 data modules, plain
+`com.android.library` (not KMP) for now - it uses `LocalContext`,
+`stringResource(R.string...)` via the classic Android resource system,
+and an Android-only "open the OS per-app language settings" intent, none
+of which have a web equivalent yet. Making feature modules truly
+multiplatform (Compose Multiplatform resources instead of `R.string`,
+`expect`/`actual` for the platform-specific bits) is Phase 3 work, same as
+the data layer's web actuals.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**

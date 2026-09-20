@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
-import org.neteinstein.pickaname.R
+import org.neteinstein.pickaname.core.designsystem.R
 import org.neteinstein.pickaname.presentation.theme.PickANameGradients
 import org.neteinstein.pickaname.presentation.theme.SplashTitleStyle
 

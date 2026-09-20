@@ -17,7 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import org.neteinstein.pickaname.R
+import org.neteinstein.pickaname.core.designsystem.R
 import org.neteinstein.pickaname.domain.model.Gender
 import org.neteinstein.pickaname.presentation.theme.PickANameTheme
 

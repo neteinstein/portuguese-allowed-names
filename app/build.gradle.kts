@@ -92,6 +92,7 @@ dependencies {
     implementation(project(":core:database"))
     implementation(project(":core:parser"))
     implementation(project(":core:data"))
+    implementation(project(":feature:settings"))
 
     // Core Android dependencies
     implementation(libs.androidx.core.ktx)
@@ -128,6 +129,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
 
     // Testing dependencies
+    testImplementation(project(":core:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockk)
