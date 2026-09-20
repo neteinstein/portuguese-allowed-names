@@ -85,6 +85,12 @@
     <!-- Common -->
     <string name="cd_back">Back</string>
 
+    <!-- Web-only: "get the Android app" banner (see InstallAppBanner) -->
+    <string name="web_install_banner_title">Get the Android app</string>
+    <string name="web_install_banner_message">Faster, works offline, and syncs the latest official list.</string>
+    <string name="web_install_banner_action">Install</string>
+    <string name="cd_dismiss_install_banner">Dismiss</string>
+
     <!-- Plurals -->
     <plurals name="name_count">
         <item quantity="one">%1$d name</item>

@@ -1161,7 +1161,7 @@ them in this phase were written by copying another module's file. The next
 structural change (a new target, an AGP bump, a compileSdk bump) has to be
 made 15 times by hand.
 
-### 9.3 The settings-store swap silently dropped existing users' preferences
+### 9.3 The settings-store swap silently dropped existing users' preferences — FIXED
 
 Phase 1 moved `SettingsRepositoryImpl` from DataStore Preferences to
 multiplatform-settings backed by `SharedPreferencesSettings("pick_a_name_
@@ -1170,11 +1170,20 @@ who already had the app installed, that resets the configured source URL,
 the refresh period and the last-refresh timestamp to defaults on first
 launch after the update (the reset timestamp also forces one extra sync).
 
-This already shipped (it went to `main` before this branch), so it can't be
-prevented now - but it should be recorded rather than discovered later from
-a user report, and the same care is owed to any future store swap. If the
-data matters, a one-time read of the old DataStore file on Android is still
-possible.
+This already shipped (it went to `main` before this branch), so it couldn't
+be prevented - but it *can* still be recovered, and now is:
+`core:datastore`'s `androidMain` has a one-time
+`migrateLegacyDataStoreSettings()` that reads the old
+`pick_a_name_settings.preferences_pb` file and copies the four keys across
+(they never changed name - only the backend did), then deletes it. It runs
+inside the `single<FlowSettings>` provider, before anything can read a
+setting, and starts with a `File.exists()` check so every launch after the
+first pays nothing. Existing values in the new store always win, and an
+unreadable legacy file is left in place rather than deleted - deleting data
+we failed to read once is the exact mistake being repaired here.
+
+The lesson for future store swaps stands: a backend change is a data
+migration, whether or not the keys move.
 
 ### 9.4 The snapshot decision (R3) needs a JVM target that doesn't exist yet
 

@@ -85,6 +85,12 @@
     <!-- Comum -->
     <string name="cd_back">Voltar</string>
 
+    <!-- Apenas na web: faixa "instale a aplicação Android" (ver InstallAppBanner) -->
+    <string name="web_install_banner_title">Instale a aplicação Android</string>
+    <string name="web_install_banner_message">Mais rápida, funciona offline e sincroniza a lista oficial mais recente.</string>
+    <string name="web_install_banner_action">Instalar</string>
+    <string name="cd_dismiss_install_banner">Dispensar</string>
+
     <!-- Plurais -->
     <plurals name="name_count">
         <item quantity="one">%1$d nome</item>
