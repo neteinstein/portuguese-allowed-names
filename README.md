@@ -1,18 +1,21 @@
-# Allowed Names in Portugal (Nomes Permitidos em Portugal)
+# Portugal's Approved Names (Nomes Permitidos em Portugal)
 
-| Splash Screen | Name List | Name List | Settings |
+| Splash Screen | Name List | Filtered Name List | Settings |
 | :---: | :---: | :---: | :---: |
-| <img src="https://github.com/neteinstein/portuguese-allowed-names/blob/master/distribution/metadata/android/en-US/images/phoneScreenshots/1_splash.png" width="250" alt="Splash Screen" /> | <img src="https://github.com/neteinstein/portuguese-allowed-names/blob/master/distribution/metadata/android/en-US/images/phoneScreenshots/2_name_list.png" width="250" alt="Name List" /> | <img src="https://github.com/neteinstein/portuguese-allowed-names/blob/master/distribution/metadata/android/en-US/images/phoneScreenshots/3_name_list_filtered.png" width="250" alt="Filtered Name List" /> | <img src="https://github.com/neteinstein/portuguese-allowed-names/blob/master/distribution/metadata/android/en-US/images/phoneScreenshots/4_settings.png" width="250" alt="Settings" /> |
+| <img src="distribution/metadata/android/pt-PT/images/phoneScreenshots/1_splash.png" width="250" alt="Splash Screen" /> | <img src="distribution/metadata/android/pt-PT/images/phoneScreenshots/2_name_list.png" width="250" alt="Name List" /> | <img src="distribution/metadata/android/pt-PT/images/phoneScreenshots/3_name_list_filtered.png" width="250" alt="Filtered Name List" /> | <img src="distribution/metadata/android/pt-PT/images/phoneScreenshots/4_settings.png" width="250" alt="Settings" /> |
 
+*Screenshots show the Portuguese (pt-PT) UI, where the app is called "Nomes Permitidos em Portugal".*
 
 An Android app that lists the first names legally allowed for newborns in Portugal, based on
 the official register published by the [Instituto dos Registos e do Notariado](https://irn.justica.gov.pt/en-gb/)
-(IRN). Browse the full list, filter it by gender or initial letter, and see the matching count
-update live. Available in English and Portuguese.
+(IRN). Browse the full list, search it, filter it by gender, initial letter, or a best-effort
+"traditional names" filter, pick a random name, look up a name's meaning, and follow links to
+the official IRN rules. Available in English and Portuguese.
 
 (PT) Uma app Android que lista os nomes próprios permitidos para recém-nascidos em Portugal,
-com base na lista oficial publicada pelo IRN. Permite consultar a lista completa e filtrar por
-género ou letra inicial, com a contagem de resultados atualizada em tempo real.
+com base na lista oficial publicada pelo IRN. Permite consultar e pesquisar a lista completa,
+filtrar por género, letra inicial ou nomes tradicionais, sortear um nome, ver o significado de
+um nome e aceder às regras oficiais do IRN.
 
 ## Where the data comes from
 
@@ -20,33 +23,59 @@ The app downloads the official "Lista de Nomes Próprios" PDF published by the I
 entry (name + allowed gender), and stores the result in a local database. The source URL is
 configurable from **Settings** and defaults to the IRN's published PDF. Changing the URL (or
 running the app for the first time) triggers a fresh download-and-parse pass that purges and
-repopulates the database.
+repopulates the database. The list is also refreshed automatically on a configurable schedule
+(yearly by default).
 
 ## Architecture
 
-MVVM + Clean Architecture, split into three layers:
+MVVM + Clean Architecture, being migrated to Kotlin Multiplatform + Compose Multiplatform so
+the same code can also target the web. The migration is incremental and tracked in
+[MIGRATION_PLAN.md](MIGRATION_PLAN.md); today the shipping Android app (`:app`) is composed
+from the extracted modules below plus the screens that haven't moved yet.
 
 ```
-presentation/   Compose UI + ViewModels (splash, sync/loading, name list, settings)
-domain/         Use cases, repository interfaces, and plain domain models — no Android deps
-data/           Repository implementations, Room database, DataStore, remote fetch + PDF parser
-di/             Koin modules wiring the above together
+app/                Shipping Android app: splash, sync, name list screens, navigation, Koin wiring
+core/
+  model/            Plain domain models (NameEntry, Gender, RefreshPeriod, …) — no dependencies
+  domain/           Repository interfaces + use cases — depends only on core:model
+  designsystem/     Theme (IRN-derived palette), shared composables, shared string resources
+  network/          Ktor client + remote data source for the names PDF
+  datastore/        Settings repository on multiplatform-settings
+  database/         Room database, DAO, and name repository
+  parser/           PDF text extraction (pdfbox-android) + name list parser
+  data/             Sync repository tying network + parser + database together
+  testing/          Shared test utilities (e.g. MainDispatcherRule)
+feature/
+  settings/         Settings screen + ViewModel
+composeApp/         Kotlin Multiplatform app shell (Android + wasmJs) exposing the root App()
+androidApp/         Thin Android launcher for composeApp (migration scaffold, not the released app)
+webApp/             wasmJs browser entry point for composeApp (published to GitHub Pages)
 ```
 
 - **DI**: [Koin](https://insert-koin.io/)
 - **Persistence**: [Room](https://developer.android.com/training/data-storage/room) (names) +
-  [DataStore Preferences](https://developer.android.com/topic/libraries/architecture/datastore) (settings)
-- **UI**: Jetpack Compose + Navigation Compose, theme derived from the IRN site's palette
+  [multiplatform-settings](https://github.com/russhwolf/multiplatform-settings) (settings)
+- **Networking**: [Ktor](https://ktor.io/) client (CIO engine on Android)
+- **UI**: Jetpack Compose / Compose Multiplatform + Navigation Compose
 - **PDF parsing**: [pdfbox-android](https://github.com/TomRoush/PdfBox-Android)
 - **Async**: Kotlin Coroutines & Flow
+
+Room and pdfbox-android are Android-only for now, so the data-layer and feature modules are
+still Android libraries; `composeApp` and `webApp` are the multiplatform parts (currently a
+placeholder `App()` proving the Android + web pipeline). See the migration plan for what moves
+next.
 
 ## Building & testing
 
 ```
-./gradlew assembleDebug     # build the debug APK
-./gradlew testDebugUnitTest # run the unit test suite
-./gradlew lintDebug         # run Android Lint
+./gradlew :app:assembleDebug                  # build the debug APK of the released Android app
+./gradlew testDebugUnitTest                   # run the unit tests of every Android module
+./gradlew lintDebug                           # run Android Lint
+./gradlew :webApp:wasmJsBrowserDistribution   # build the web distribution (webApp/build/dist/wasmJs/productionExecutable)
 ```
+
+The web build is deployed to GitHub Pages by `.github/workflows/deploy-web.yml`, separately
+from the Android release pipeline (`release.yml`).
 
 ## AI agent roles
 
@@ -67,4 +96,3 @@ details.
 
 Copyright © 2026 Pedro Vicente. Licensed under the
 [Apache License, Version 2.0](LICENSE) — see [NOTICE](NOTICE) for attribution details.
-
