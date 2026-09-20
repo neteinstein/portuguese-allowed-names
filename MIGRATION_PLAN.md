@@ -259,6 +259,51 @@ rule, `claude/kmp-cmp-migration-plan-m6dlst` was fast-forwarded onto the
 latest `main` before starting `feature:sync`, rather than continuing to
 build on top of now-merged history.
 
+**`feature:namelist` extraction (third of the four Phase 2 modules)**
+surfaced one genuinely new problem the first two extractions never hit:
+`NameListScreen.kt` uses `GenderTag`, a small shared composable that lived
+in `:app`'s `presentation/common/` package - not feature-specific UI, but
+exactly the kind of "shared across screens" building block §3's target
+layout already calls out for `core:designsystem` (`theme, colors,
+typography, shapes, gradients, GenderTag, shared composables`). Moved it
+there via `git mv`, package unchanged
+(`org.neteinstein.pickaname.presentation.common`), landing in
+`core/designsystem/src/androidMain/kotlin/...` rather than `commonMain`:
+`GenderTag` calls the classic `androidx.compose.ui.res.stringResource(
+@StringRes Int)` overload against this module's own `androidMain`
+`strings.xml`, and pulls in `androidx.compose.material:material-icons-
+extended` (Female/Male icons) - neither is part of Compose Multiplatform's
+common API surface yet, so `core:designsystem` picked up its first real
+`androidMain`-only Kotlin source (previously it only had `commonMain`
+Kotlin + `androidMain` resources). Also added `core:model` as a
+`commonMain` dependency of `core:designsystem` (for `GenderTag`'s `Gender`
+parameter) - safe since `core:model` is the pure-Kotlin leaf module with no
+dependencies of its own, so this doesn't create any cross-module cycle
+risk.
+
+`NameListScreen.kt`/`NameListViewModel.kt`/`NameListViewModelTest.kt`
+themselves moved exactly like the prior two extractions - package
+preserved, `PickANameNavHost.kt`/`ViewModelModule.kt` (staying in `:app`)
+needed no import changes. `feature/namelist/build.gradle.kts` needed two
+dependencies the settings/sync templates didn't: `androidx.browser`
+(Custom Tabs fallback for the "open name meaning" link) and
+`androidx.activity.compose` (`BackHandler` for the meaning-search bottom
+sheet's swipe-to-dismiss). Removed `androidx.browser` from `:app`'s own
+`build.gradle.kts` since `NameListScreen` was its only consumer there and
+it's now declared directly by `feature:namelist`.
+
+**`deploy-web.yml` retargeted to `main` only.** It previously ran on every
+push to `claude/kmp-cmp-migration-plan-m6dlst` so the wasmJs build got
+CI'd on every Phase 2 push; changed to deploy only on push to `main` (per
+explicit instruction), since the live Pages site should always reflect the
+last stable, merged state, not in-progress migration-branch work.
+`workflow_dispatch` stays available to build/deploy on demand. One
+trade-off worth noting: pushes to the migration branch no longer get a
+wasmJs build check in CI as a side effect of this trigger (`pr-checks.yml`
+doesn't build wasmJs itself) - acceptable since Phase 2's four extractions
+are Android-only anyway (§5); revisit once Phase 5 adds a real
+`wasmJsBrowserTest`/build check to `pr-checks.yml` for every PR.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**
@@ -507,8 +552,9 @@ incrementally instead of as one large "move everything" commit.
   module-boundary check (e.g. a Gradle task that fails the build if a
   `feature/*` module declares a dependency on another `feature/*` module)
   so §3.1's rules don't erode silently over time.
-- Extend `deploy-web.yml` to run on every push to the migration branch so
-  the live Pages preview always reflects the latest state.
+- `deploy-web.yml` deploys only on push to `main` (never the migration
+  branch), so the live Pages site always reflects the last stable, merged
+  state; `workflow_dispatch` remains available to build/deploy on demand.
 
 ### Phase 6 — Stabilization + merge decision
 - Manual pass on a real device/browser matrix (Android phone, Chrome,
@@ -567,8 +613,9 @@ incrementally instead of as one large "move everything" commit.
 ## 7. GitHub Pages deployment
 
 - New workflow `.github/workflows/deploy-web.yml`:
-  - Triggers on push to the migration branch (while stabilizing) and later
-    on push to `main` (once merged).
+  - Triggers on push to `main` only (plus manual `workflow_dispatch`), so
+    the live Pages site never deploys in-progress work from the migration
+    branch.
   - `./gradlew :webApp:wasmJsBrowserDistribution` produces
     `webApp/build/dist/wasmJs/productionExecutable`.
   - Deploys that directory via `actions/upload-pages-artifact` +

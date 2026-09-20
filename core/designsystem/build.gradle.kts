@@ -21,10 +21,21 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            // GenderTag (androidMain, see below) needs the Gender enum; core:model is a pure-
+            // Kotlin leaf module so depending on it from commonMain costs nothing on any target.
+            implementation(project(":core:model"))
             implementation(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.ui)
+        }
+        androidMain.dependencies {
+            // GenderTag (see presentation/common/) is Android-only for now: it calls the classic
+            // androidx.compose.ui.res.stringResource(@StringRes Int) overload against this
+            // module's own androidMain strings.xml, and android.compose.material.icons-extended
+            // isn't multiplatform - both stay android-only until Phase 3 moves feature:namelist
+            // (GenderTag's only consumer) to Compose Multiplatform resources.
+            implementation(libs.androidx.material.icons.extended)
         }
     }
 }

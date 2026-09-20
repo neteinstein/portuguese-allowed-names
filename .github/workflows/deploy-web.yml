@@ -4,11 +4,12 @@ name: Deploy Web
 # Pages. Kept entirely separate from release.yml (Android/Play Store): different trigger,
 # different job, no shared state - a broken web build can never block an Android release.
 #
-# Runs on every push to the migration branch while the KMP/CMP port is being stabilized (see
-# MIGRATION_PLAN.md); once merged, retarget the `push.branches` trigger below at `main`.
+# Only deploys on push to `main` - the live Pages site should always reflect the last stable,
+# merged state, never in-progress work on the migration branch. Use workflow_dispatch to build
+# and deploy on demand (e.g. to preview the migration branch) without changing that.
 on:
   push:
-    branches: [ claude/kmp-cmp-migration-plan-m6dlst ]
+    branches: [ main ]
   workflow_dispatch:
 
 concurrency:
