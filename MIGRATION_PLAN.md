@@ -1,9 +1,10 @@
 # KMP + Compose Multiplatform Migration Plan
 
-Status: **in progress, not merged to `main`**. All work happens on
-`claude/kmp-cmp-migration-plan-m6dlst` (and follow-up branches based on it)
-until the web + Android targets are verified stable side by side with the
-current Android-only app.
+Status: **in progress**. Phases 0–1 and the first step of Phase 2
+(`feature:settings`) merged to `main` via PR #46. Remaining work continues
+on `claude/kmp-cmp-migration-plan-m6dlst` (and follow-up branches based on
+it) until the web + Android targets are verified stable side by side with
+the app's current feature set.
 
 **Phase 0 is implemented** (see §5): `core:model`, `core:domain`, and
 `core:designsystem` exist with the domain layer and theme moved over
@@ -228,6 +229,35 @@ file. Fixed by adding an explicit
 broader sweep (`\bR\.(string|plurals|drawable|mipmap|style|xml|color|array)\.`
 across all of `app/src`) to check for any other implicit references this
 pattern could hide; no further instances were found.
+
+**`feature:sync` extraction (second of the four Phase 2 modules)** followed
+the exact mechanical pattern `feature:settings` established, with no new
+class of bug this time: `SyncScreen.kt`, `SyncViewModel.kt` (which also
+declares `SyncOrigin`, the enum `Routes.kt` and `PickANameNavHost.kt` key
+off), and `SyncViewModelTest.kt` moved via `git mv` into
+`feature/sync/src/{main,test}/...`, package names unchanged
+(`org.neteinstein.pickaname.presentation.sync`). `SyncScreen.kt` already
+imported `core.designsystem.R` (fixed in the first Phase 2 round's sweep),
+and `SyncViewModelTest.kt` already imported `core:testing`'s
+`MainDispatcherRule` from its preserved `org.neteinstein.pickaname.util`
+package, so neither file needed any content change beyond the move itself.
+`feature/sync/build.gradle.kts` mirrors `feature/settings/build.gradle.kts`
+exactly (same dependency shape: `core:model`/`core:domain`/`core:designsystem`,
+Compose + Material icons extended, Koin, `core:testing` for tests).
+`Routes.kt`/`PickANameNavHost.kt`/`ViewModelModule.kt` (all staying in
+`:app`) needed zero import changes — they already referenced
+`org.neteinstein.pickaname.presentation.sync.*`, which now simply resolves
+through the new `:feature:sync` module dependency instead of `:app`'s own
+source set, exactly like the `feature:settings` extraction.
+
+**Also fixed while continuing this branch**: PR #46 (Phases 0–2 through
+`feature:settings`) was merged to `main` directly by the repo owner outside
+this session, and two follow-up PRs landed on `main` after that (an
+app-name rename touching `strings.xml`, then a README/screenshot update
+touching `NameListScreen.kt`). Per the "merged PR → restart the branch"
+rule, `claude/kmp-cmp-migration-plan-m6dlst` was fast-forwarded onto the
+latest `main` before starting `feature:sync`, rather than continuing to
+build on top of now-merged history.
 
 ## 1. Goal
 
