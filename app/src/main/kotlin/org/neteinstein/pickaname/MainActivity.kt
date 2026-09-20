@@ -4,9 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.ui.res.painterResource
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import org.neteinstein.pickaname.presentation.navigation.PickANameNavHost
-import org.neteinstein.pickaname.presentation.theme.PickANameTheme
+import org.neteinstein.pickaname.app.App
 
 class MainActivity : ComponentActivity() {
 
@@ -17,9 +17,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            PickANameTheme {
-                PickANameNavHost()
-            }
+            // The launcher icon stays app-identity, owned by this shell, and is handed to the
+            // shared App() rather than looked up inside it (see MIGRATION_PLAN.md §3.1).
+            App(logo = painterResource(R.drawable.ic_launcher_foreground))
         }
     }
 }

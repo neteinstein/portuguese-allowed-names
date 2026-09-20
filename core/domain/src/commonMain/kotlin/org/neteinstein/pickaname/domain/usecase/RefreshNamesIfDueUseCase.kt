@@ -3,6 +3,7 @@ package org.neteinstein.pickaname.domain.usecase
 import org.neteinstein.pickaname.domain.model.AutoRefreshResult
 import org.neteinstein.pickaname.domain.model.SyncOutcome
 import org.neteinstein.pickaname.domain.repository.SettingsRepository
+import org.neteinstein.pickaname.domain.time.systemCurrentTimeMillis
 
 /**
  * Runs once per app open, when the database is already populated (so no initial sync is
@@ -17,7 +18,7 @@ import org.neteinstein.pickaname.domain.repository.SettingsRepository
 class RefreshNamesIfDueUseCase(
     private val settingsRepository: SettingsRepository,
     private val syncNamesUseCase: SyncNamesUseCase,
-    private val currentTimeMillis: () -> Long = System::currentTimeMillis
+    private val currentTimeMillis: () -> Long = ::systemCurrentTimeMillis
 ) {
     suspend operator fun invoke(): AutoRefreshResult {
         val lastRefresh = settingsRepository.getLastRefreshTimestamp()

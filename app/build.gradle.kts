@@ -81,55 +81,31 @@ android {
 }
 
 dependencies {
-    // core modules (see MIGRATION_PLAN.md) - domain layer, design system, and the whole data
-    // layer now live here; package names are unchanged from before each move, so no import in
-    // this module's own source needed to change.
-    implementation(project(":core:model"))
-    implementation(project(":core:domain"))
-    implementation(project(":core:designsystem"))
-    implementation(project(":core:network"))
-    implementation(project(":core:datastore"))
-    implementation(project(":core:database"))
+    // The shared app: theme, nav graph, every feature module and the whole Koin graph live in
+    // composeApp now (MIGRATION_PLAN.md §3.1 / Phase 3). What's left in this module is the
+    // Android shell - MainActivity, the manifest, launcher resources and Koin startup.
+    implementation(project(":composeApp"))
+    // Still referenced directly by this shell: pdfbox-android's one-time resource loader in
+    // PickANameApplication (exposed as api by core:parser).
     implementation(project(":core:parser"))
-    implementation(project(":core:data"))
-    implementation(project(":feature:settings"))
-    implementation(project(":feature:sync"))
-    implementation(project(":feature:namelist"))
-    implementation(project(":feature:splash"))
 
-    // Core Android dependencies
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.splashscreen)
 
-    // Compose dependencies
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.navigation.compose)
 
-    // Dependency Injection - Koin
     implementation(platform(libs.koin.bom))
     implementation(libs.koin.android)
-    implementation(libs.koin.androidx.compose)
 
-    // Networking (names source download) - the shared HttpClient built and provided from here
-    // (see di/AppModule.kt) since it's the only place that knows which Koin modules exist;
-    // Room/DataStore/OkHttp/pdfbox-android direct dependencies moved out with the code that used
-    // them (see the core/* modules above).
-    implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.cio)
-
-    // Coroutines
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
 
-    // Testing dependencies
     testImplementation(project(":core:testing"))
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

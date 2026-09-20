@@ -1,9 +1,70 @@
+@file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.library)
-    alias(libs.plugins.jetbrains.kotlin.android)
+    alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.compose.compiler)
+}
+
+kotlin {
+    androidTarget {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
+    wasmJs {
+        browser()
+    }
+
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project(":core:model"))
+            implementation(project(":core:domain"))
+            // Strings (Compose Multiplatform resources) and shared theming/composables.
+            implementation(project(":core:designsystem"))
+
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(compose.ui)
+            implementation(libs.compose.material.icons.extended)
+
+            implementation(libs.jetbrains.lifecycle.viewmodel.compose)
+            implementation(libs.jetbrains.lifecycle.runtime.compose)
+
+            implementation(project.dependencies.platform(libs.koin.bom))
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
+
+            implementation(libs.kotlinx.coroutines.core)
+        }
+        androidMain.dependencies {
+            // Custom Tabs + the WebView-backed in-app browser (see InAppBrowser.android.kt).
+            implementation(libs.androidx.browser)
+            implementation(libs.androidx.core.ktx)
+            // BackHandler (see PlatformBackHandler.android.kt).
+            implementation(libs.androidx.activity.compose)
+        }
+        val wasmJsMain by getting {
+            dependencies {
+                // window.open for the external-link actual.
+                implementation(libs.kotlinx.browser)
+            }
+        }
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(project(":core:testing"))
+                implementation(libs.junit)
+                implementation(libs.mockk)
+                implementation(libs.truth)
+                implementation(libs.turbine)
+                implementation(libs.kotlinx.coroutines.test)
+            }
+        }
+    }
 }
 
 android {
@@ -18,48 +79,4 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-    }
-
-    buildFeatures {
-        compose = true
-    }
-}
-
-dependencies {
-    implementation(project(":core:model"))
-    implementation(project(":core:domain"))
-    // for the R class (strings) and GenderTag - see MIGRATION_PLAN.md: strings.xml and shared
-    // composables live here so every feature module can reach them, since Android resources
-    // don't flow "backward" from :app.
-    implementation(project(":core:designsystem"))
-
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.material3)
-    implementation(libs.androidx.material.icons.extended)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.lifecycle.runtime.compose)
-    implementation(libs.androidx.activity.compose)
-    // Custom Tabs fallback when the in-app WebView bottom sheet isn't available (see
-    // NameListScreen's canLoadWebView/openUrlInCustomTab).
-    implementation(libs.androidx.browser)
-    implementation(libs.androidx.core.ktx)
-
-    implementation(platform(libs.koin.bom))
-    implementation(libs.koin.androidx.compose)
-
-    implementation(libs.kotlinx.coroutines.core)
-
-    testImplementation(project(":core:testing"))
-    testImplementation(libs.junit)
-    testImplementation(libs.mockk)
-    testImplementation(libs.truth)
-    testImplementation(libs.turbine)
-    testImplementation(libs.kotlinx.coroutines.test)
 }

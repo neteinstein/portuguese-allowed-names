@@ -1,8 +1,40 @@
+@file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.library)
-    alias(libs.plugins.jetbrains.kotlin.android)
+}
+
+kotlin {
+    androidTarget {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
+    wasmJs {
+        browser()
+    }
+
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project(":core:model"))
+            implementation(project(":core:domain"))
+            implementation(project(":core:network"))
+            implementation(project(":core:parser"))
+            implementation(project(":core:database"))
+            implementation(libs.kotlinx.coroutines.core)
+        }
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.junit)
+                implementation(libs.mockk)
+                implementation(libs.truth)
+                implementation(libs.kotlinx.coroutines.test)
+            }
+        }
+    }
 }
 
 android {
@@ -17,24 +49,4 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-    }
-}
-
-dependencies {
-    implementation(project(":core:model"))
-    implementation(project(":core:domain"))
-    implementation(project(":core:network"))
-    implementation(project(":core:parser"))
-    implementation(project(":core:database"))
-    implementation(libs.kotlinx.coroutines.core)
-
-    testImplementation(libs.junit)
-    testImplementation(libs.mockk)
-    testImplementation(libs.truth)
-    testImplementation(libs.kotlinx.coroutines.test)
 }

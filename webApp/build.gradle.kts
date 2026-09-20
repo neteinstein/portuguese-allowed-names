@@ -21,7 +21,14 @@ kotlin {
             implementation(project(":composeApp"))
             implementation(compose.runtime)
             implementation(compose.ui)
+            implementation(compose.components.resources)
             implementation(libs.kotlinx.browser)
         }
     }
+}
+
+compose.resources {
+    // Just this shell's own brand mark (see composeResources/drawable/app_logo.xml).
+    packageOfResClass = "pickaname.webapp.generated.resources"
+    generateResClass = always
 }

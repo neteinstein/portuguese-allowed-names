@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      The launcher label, and the only string that has to stay a classic Android resource:
+      AndroidManifest.xml's android:label can't read Compose Multiplatform resources. Every other
+      string (including the app name as *rendered inside the UI*) lives in
+      core:designsystem/src/commonMain/composeResources, so it works on web too.
+    -->
+    <string name="app_name">Portugal\'s Approved Names</string>
+</resources>

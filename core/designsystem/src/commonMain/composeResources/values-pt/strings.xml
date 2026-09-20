@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Identidade da aplicação (também usado como título no ecrã inicial) -->
+    <string name="app_name">Nomes Permitidos em Portugal</string>
+    <string name="splash_tagline">Lista de nomes próprios portugueses aprovados</string>
+    <string name="splash_unofficial_disclaimer">Aplicação não oficial — sem afiliação com o Governo de Portugal</string>
+
+    <!-- Ecrã de sincronização / carregamento -->
+    <string name="sync_loading_title">A carregar os nomes…</string>
+    <string name="sync_loading_message">Estamos a descarregar e preparar a lista oficial de nomes portugueses. Isto demora apenas um momento.</string>
+    <string name="sync_error_title">Ocorreu um problema</string>
+    <string name="sync_error_network">Não foi possível contactar a fonte de nomes. Verifique a sua ligação à Internet e tente novamente.</string>
+    <string name="sync_error_invalid_source">A fonte configurada não parece ser uma lista de nomes válida.</string>
+    <string name="sync_error_no_names_found">Não foram encontrados nomes na fonte configurada.</string>
+    <string name="sync_error_unknown">Ocorreu um erro inesperado.</string>
+    <string name="sync_retry">Tentar novamente</string>
+    <string name="sync_edit_source">Editar fonte</string>
+
+    <!-- Ecrã de lista de nomes -->
+    <string name="name_list_search_hint">Pesquisar nomes</string>
+    <string name="filter_section_gender">Género</string>
+    <string name="filter_section_initial">Inicial</string>
+    <string name="filter_section_other">Outros filtros</string>
+    <string name="filter_gender_all">Todos</string>
+    <string name="filter_initial_all">Todas</string>
+    <string name="filter_traditional_names">Nomes tradicionais</string>
+    <string name="gender_female">Feminino</string>
+    <string name="gender_male">Masculino</string>
+    <string name="name_list_empty_state">Nenhum nome corresponde aos filtros selecionados.</string>
+    <string name="name_list_auto_refresh_failed">Não foi possível atualizar a lista de nomes. Tentaremos novamente na próxima vez que abrir a aplicação.</string>
+    <string name="name_rules_title">Recursos oficiais</string>
+    <string name="name_rules_intro">Para as regras legais exatas, a lista completa de nomes permitidos e como registar um nascimento, consulte estes recursos oficiais do Governo de Portugal.</string>
+    <string name="name_rules_disclaimer">Estas hiperligações abrem sites oficiais do Governo de Portugal no seu navegador. A aplicação Nomes Permitidos em Portugal é independente e não é oficial, nem está associada ou afiliada ao Governo de Portugal ou ao IRN.</string>
+    <string name="name_rules_link_rules_title">Regras dos nomes</string>
+    <string name="name_rules_link_rules_description">Página oficial do IRN que explica quais os nomes próprios e apelidos legalmente aceites.</string>
+    <string name="name_rules_link_pdf_title">Nomes permitidos (PDF)</string>
+    <string name="name_rules_link_pdf_description">Lista oficial completa dos nomes próprios permitidos, publicada pelo IRN.</string>
+    <string name="name_rules_link_register_birth_title">Como registar um nascimento</string>
+    <string name="name_rules_link_register_birth_description">Guia oficial do Governo sobre como registar o nascimento de um recém-nascido em Portugal.</string>
+    <string name="name_rules_footer">Nos casos invulgares ou de fronteira, a resposta definitiva cabe sempre ao registo civil / IRN.</string>
+    <string name="traditional_names_info_title">Nomes tradicionais portugueses</string>
+    <string name="traditional_names_info_intro">O IRN (a entidade responsável pelo registo civil em Portugal) não publica qualquer lista ou indicação de quais os nomes considerados "tradicionais" portugueses. Este filtro é apenas uma aproximação feita com base no melhor esforço, e não uma classificação oficial.</string>
+    <string name="traditional_names_info_disclaimer">Trate este filtro como uma indicação aproximada, não como uma resposta definitiva. Alguns nomes tradicionais podem ficar ocultos, e alguns nomes ocultos podem, ainda assim, ser tradicionais.</string>
+    <string name="traditional_names_info_rules">Como melhor esforço, um nome é apresentado quando corresponde a uma lista selecionada de nomes portugueses clássicos bem conhecidos ou, caso contrário, quando segue os padrões ortográficos portugueses: sem K, Y ou W; sem as grafias "ph", "th", "sh" ou "tz"; todo "q" seguido de "u"; sem começar por "s" seguido diretamente de consoante; sem terminar numa consoante que não seja "l", "r", "s", "z", "m" ou "n"; e sem letras duplicadas além das nativas "rr"/"ss" — incluindo vogais repetidas como "aa" ou "ee".</string>
+    <string name="cd_settings_icon">Definições</string>
+    <string name="cd_name_rules_icon">Regras dos nomes</string>
+    <string name="cd_traditional_names_info_icon">Sobre o filtro de nomes tradicionais</string>
+    <string name="cd_random_name_icon">Escolher um nome aleatório</string>
+    <string name="cd_clear_search">Limpar pesquisa</string>
+    <string name="cd_letter_fast_scroller">Arraste para saltar para uma letra</string>
+    <string name="name_meaning_search_query">Qual é o significado do nome %1$s</string>
+    <string name="name_meaning_bottom_sheet_title">A descobrir o significado do nome %1$s</string>
+
+    <!-- Ecrã de definições -->
+    <string name="settings_title">Definições</string>
+    <string name="settings_language_section">Idioma</string>
+    <string name="settings_language_description">A aplicação Nomes Permitidos em Portugal segue o idioma do dispositivo. Toque abaixo para o alterar nas definições do Android.</string>
+    <string name="settings_language_button">Alterar idioma da aplicação</string>
+
+    <!-- Ecrã de definições: pesquisa de nomes -->
+    <string name="settings_search_engine_section">Pesquisa de Nomes</string>
+    <string name="settings_search_engine_description">Qual motor de pesquisa usar ao premir sem soltar um nome para consultar o seu significado. O DuckDuckGo abre uma resposta instantânea de IA.</string>
+    <string name="settings_search_engine_label">Motor de pesquisa</string>
+    <string name="search_engine_google">Google</string>
+    <string name="search_engine_duckduckgo">DuckDuckGo</string>
+    <string name="search_engine_brave">Brave</string>
+
+    <string name="settings_source_section">Fonte dos nomes</string>
+    <string name="settings_source_description">URL do documento PDF com a lista de nomes próprios portugueses oficialmente aprovados.</string>
+    <string name="settings_source_url_label">URL da fonte</string>
+    <string name="settings_source_url_error">Introduza um URL http(s) válido</string>
+    <string name="settings_save">Guardar e recarregar</string>
+    <string name="settings_reset">Repor predefinição</string>
+
+    <!-- Ecrã de definições: atualização automática -->
+    <string name="settings_refresh_section">Atualização automática</string>
+    <string name="settings_refresh_description">Com que frequência a aplicação deve verificar automaticamente se existe uma lista de nomes atualizada.</string>
+    <string name="settings_refresh_period_label">Frequência de atualização</string>
+    <string name="refresh_period_weekly">Semanalmente</string>
+    <string name="refresh_period_monthly">Mensalmente</string>
+    <string name="refresh_period_quarterly">Trimestralmente (3 meses)</string>
+    <string name="refresh_period_bi_yearly">Semestralmente (6 meses)</string>
+    <string name="refresh_period_yearly">Anualmente</string>
+
+    <!-- Comum -->
+    <string name="cd_back">Voltar</string>
+
+    <!-- Plurais -->
+    <plurals name="name_count">
+        <item quantity="one">%1$d nome</item>
+        <item quantity="many">%1$d nomes</item>
+        <item quantity="other">%1$d nomes</item>
+    </plurals>
+
+</resources>

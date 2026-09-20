@@ -3,6 +3,7 @@ package org.neteinstein.pickaname.domain.usecase
 import org.neteinstein.pickaname.domain.model.SyncOutcome
 import org.neteinstein.pickaname.domain.repository.NameSyncRepository
 import org.neteinstein.pickaname.domain.repository.SettingsRepository
+import org.neteinstein.pickaname.domain.time.systemCurrentTimeMillis
 
 /**
  * Downloads the names list from the given URL, parses it, and purges + repopulates the local
@@ -16,7 +17,7 @@ import org.neteinstein.pickaname.domain.repository.SettingsRepository
 class SyncNamesUseCase(
     private val nameSyncRepository: NameSyncRepository,
     private val settingsRepository: SettingsRepository,
-    private val currentTimeMillis: () -> Long = System::currentTimeMillis
+    private val currentTimeMillis: () -> Long = ::systemCurrentTimeMillis
 ) {
     suspend operator fun invoke(url: String): SyncOutcome {
         val outcome = nameSyncRepository.syncFromUrl(url)

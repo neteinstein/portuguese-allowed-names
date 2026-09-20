@@ -429,6 +429,329 @@ gap explicit rather than silently faking web PDF parsing. Implementing
 `pdf.js` interop for real, and verifying it against the actual names-list
 PDF in a real browser, stays open Phase 3 work.
 
+**Local builds now work — the sandbox limitation above is gone.** Every
+phase up to here was written blind and validated only via CI (no
+`dl.google.com` access, no Android SDK, no browser). This session runs on a
+machine with the Android SDK and Chrome available, so the whole graph —
+`assembleDebug`, `testDebugUnitTest`, every module's `compileKotlinWasmJs`,
+and even `wasmJsBrowserTest` against real headless Chrome — builds and runs
+locally before anything is pushed. Notes from here on report *locally
+verified* results, not "written carefully, will find out in CI".
+
+**First thing that found: `core:domain`'s wasmJs target never actually
+compiled.** Nothing in CI ever built it — `deploy-web.yml` builds
+`:webApp:wasmJsBrowserDistribution`, and that only reaches
+`composeApp → core:designsystem → core:model`, so `core:domain`'s `wasmJs`
+compilation had been dead code since Phase 0 declared the target. Running
+`:core:domain:compileKotlinWasmJs` locally failed immediately on two
+JVM-only APIs sitting in `commonMain`:
+- `UpdateSourceUrlUseCase` validated URLs with `java.net.URI`. Replaced
+  with an `internal fun isValidHttpUrl(String)` in the same file — a
+  hand-rolled scheme/host check rather than a new dependency, since the
+  domain layer never needs the *parsed* URL, only a yes/no answer. It
+  preserves every accept/reject case the existing JVM test asserts
+  (whitespace rejected like `URI` does, `https://` with no host rejected,
+  non-http(s) schemes rejected), and drops userinfo/port before checking
+  the host.
+- `SyncNamesUseCase`/`RefreshNamesIfDueUseCase` both defaulted their
+  injectable clock to `System::currentTimeMillis`. Both now default to
+  `systemCurrentTimeMillis()` (`domain/time/CurrentTime.kt`), a one-line
+  wrapper over `kotlin.time.Clock.System.now().toEpochMilliseconds()` from
+  the Kotlin stdlib — no `kotlinx-datetime` dependency needed. Tests keep
+  passing their own `() -> Long`, unchanged.
+
+Also added `core:domain`'s first `commonTest`: `IsValidHttpUrlTest`, written
+against `kotlin.test` rather than JUnit/Truth/MockK so it runs on *both*
+targets — it passes under `:core:domain:wasmJsTest` (real ChromeHeadless)
+and rides along in `testDebugUnitTest` on Android. The older MockK-based
+use-case tests still live in `app/src/test`; relocating and porting those to
+`commonTest` stays Phase 5 work, unchanged.
+
+`kotlin-js-store/` (the Kotlin Gradle plugin's generated yarn lock, which
+appears the first time a wasmJs test task runs locally) is gitignored rather
+than committed, with the reasoning written next to the entry: Kotlin
+recommends committing it, but the only wasmJs CI job today runs *after*
+merge to `main`, so a lock mismatch would surface too late to catch in
+review. Revisit when Phase 5 puts a wasmJs job in `pr-checks.yml`.
+
+**Risk R1 (Room on web) is resolved: Room stays Android-only, the web gets
+its own store.** Checked Google's Maven index rather than guessing:
+`room-runtime` publishes no `wasm-js` artifact at all (only
+`room-common-wasm-js`, i.e. the annotations), and neither does
+`androidx.sqlite`'s bundled driver - so there is no "Room on wasmJs" option
+to pick. `core:database` is now KMP with the store expressed as a plain
+Kotlin interface both platforms implement:
+- `commonMain`: `NameLocalDataSource` (the DAO contract, documented so the
+  two implementations can be checked against each other) + `NameRecord` (a
+  platform-neutral row), with `NameRepositoryImpl` and the mappers now
+  target-agnostic.
+- `androidMain`: `AppDatabase`/`NameDao`/`NameEntity` exactly as before
+  (KSP wired through `kspAndroid` only), behind a thin
+  `RoomNameLocalDataSource` adapter. Android behavior is unchanged.
+- `wasmJsMain`: `LocalStorageNameLocalDataSource` - the list in memory,
+  mirrored into `localStorage`, with filtering/ordering/dedup mirroring the
+  DAO's SQL. **Deviation from the plan's original R1 sketch** (IndexedDB):
+  the list is ~7,500 short strings, comfortably inside `localStorage`'s
+  ~5 MB budget, and its synchronous API needs no async plumbing, no schema
+  and no extra dependency. The write path fails soft if the quota is ever
+  exceeded, which is the signal to revisit IndexedDB.
+- `java.text.Normalizer` (in `toFilterInitial`) became an expect/actual
+  `stripDiacritics()`: `Normalizer` on Android, the browser's own
+  `String.normalize('NFD')` on web. Both real Unicode data - no hand-rolled
+  accent table that would quietly miss a letter.
+
+`core:data` went KMP in the same pass (`NameSyncRepositoryImpl` against the
+new interface, `ParsedName.toEntity()` → `toRecord()`), and `:app`'s
+`DatabaseModule` binds `NameLocalDataSource` to the Room implementation.
+Nine new browser tests (`:core:database:wasmJsTest`, real ChromeHeadless)
+cover the web store and the diacritic actual.
+
+**Risk R2 (PDF parsing on web) is resolved, and verified against the real
+document.** `PdfTextExtractor`'s wasmJs actual is no longer a stub: it wraps
+`pdf.js` (`pdfjs-dist`, an npm dependency of `core:parser`'s wasmJs target,
+bundled by webpack). Three things this turned up that only a real browser
+could have told us:
+1. **Worker loading.** The documented ways to point
+   `GlobalWorkerOptions.workerSrc` at pdf.js's worker bundle
+   (`import.meta.url`, `new Worker(new URL(...))`) don't exist in Kotlin/
+   Wasm's webpack output, which is a classic script. Assigning the imported
+   worker module to `globalThis.pdfjsWorker` puts pdf.js on its own
+   fake-worker path, which works (parsing runs on the main thread).
+2. **pdf.js emits positioned fragments, not lines** - plus synthetic
+   whitespace-only items. Those are dropped and every separator is derived
+   from x positions instead, since a synthetic space carries a whole
+   column's width.
+3. **The column separator cannot be recovered from gap size.** Measured on
+   the real document: the gender→name gap inside a cell is ~73-80pt and the
+   name→next-column gap is ~89pt, and the latter shrinks below the former
+   as names get longer - no threshold separates them. Rather than guess,
+   `NameListTextParser` now splits cells **on gender keywords as well as on
+   double spaces**; pdfbox's double-space output parses exactly as before
+   (its tests are untouched and still pass), and pdf.js can join a row with
+   single spaces and stay correct. Row grouping also had to grow from
+   "round y into buckets" to "grow a row from its topmost baseline within
+   ~0.7x the text height", which is what folds the document's one wrapped
+   hyphenated name (`Darius-` / `Alexandru`) back into its own row the way
+   pdfbox does.
+
+Verified end to end, in ChromeHeadless, against the real 2.9 MB source PDF:
+the pdf.js path produces **7,481 names, an identical (name, gender) set to
+Apache PDFBox 2.0.27's `-sort` output** run through the same parser. (That
+comparison used the live document and a locally served copy, so it isn't a
+committed test; what is committed is `PdfTextExtractorTest`, which runs the
+extractor in a real browser against a small hand-built two-column PDF, plus
+`NameListTextParserCellSplitTest` in `commonTest`, which pins both
+platforms' whitespace shapes to the same parsed names.)
+
+Note for R6 (binary size): the current `:webApp` distribution is ~11 MB and
+does **not** yet include pdf.js, since `composeApp` is still a Phase 0
+placeholder that never reaches `core:parser`. Wiring the real app up will
+add roughly 1.5 MB of pdf.js (448 KB main + 1.0 MB worker, uncompressed).
+
+**Risk R3 (web sync/CORS) is answered, and the answer is no.** Now that
+this environment can reach the source host, a plain request settles what
+earlier phases could only flag: the IRN PDF comes back `200 OK`
+(`application/pdf`, 2,905,263 bytes) **with no `Access-Control-Allow-Origin`
+header at all**, and an `OPTIONS` preflight to the same URL returns
+`502 Bad Gateway`. A browser `fetch`/Ktor-JS request from the GitHub Pages
+origin will therefore be blocked - the web build cannot download the names
+list directly, no matter which HTTP client it uses. (Second, smaller
+finding: the host also 502s any request without a `User-Agent` header, so
+whatever eventually fetches it must send one.)
+
+That makes Phase 4's fallback the real plan rather than a contingency, and
+it's worth deciding between two shapes before building either:
+- **Ship a snapshot.** A scheduled/CI job fetches and parses the PDF and
+  commits a small names file next to the Pages site; the web build loads
+  that same-origin file, so "sync" on web means "pull the latest snapshot".
+  Needs new CI infrastructure (and a JVM-side parse), but gives the web
+  build a working, always-current list and sidesteps CORS entirely.
+- **Disable sync on web.** Ship the page with whatever snapshot is baked in
+  and tell the user plainly that refreshing the list is Android-only, per
+  the original Phase 4 text.
+The pdf.js work above is not wasted either way: it's what makes a
+user-supplied, CORS-enabled URL (and a future "open a local PDF" file
+picker) work on web.
+
+**The UI layer's strings are now Compose Multiplatform resources**, which is
+the step that unblocks moving the feature modules themselves off Android.
+`core:designsystem`'s `androidMain/res/values{,-pt}/strings.xml` moved to
+`commonMain/composeResources/values{,-pt}/strings.xml`, the generated `Res`
+class is made public (`compose.resources { publicResClass = true }`) so
+every feature module can reach it, and all ~73 `stringResource(R.string.x)`
+call sites across the four feature screens became
+`stringResource(Res.string.x)`. `GenderTag` moved from `androidMain` to
+`commonMain` at the same time - the two things that kept it Android-only
+(the `@StringRes` overload and material-icons-extended) are both solved
+here, the icons by switching to `org.jetbrains.compose.material:material-
+icons-extended`, which is multiplatform and, on Android, resolves to the
+androidx artifact anyway. It's pinned at 1.7.3 because JetBrains stopped
+publishing that artifact after 1.7.3 while Compose Multiplatform itself
+moved on; the icons are plain `ImageVector`s, so the version skew is inert.
+
+Feature modules are still `com.android.library` after this step - they get
+the resources runtime transitively from `core:designsystem` (`api(compose.
+components.resources)`), so nothing forced them to become KMP yet. Turning
+each one into a real KMP module is the next step, and it is now a
+module-shaped change rather than a resource-system change.
+
+Three things this surfaced that only running the app could have shown, all
+fixed:
+- **Android's backslash escaping is not Compose Multiplatform's.** `\'` and
+  `\"` came through literally - the title bar read `Portugal\'s Approved
+  Names`. Compose resources take the XML text as-is, so every escape was
+  removed.
+- **Only positional format args are substituted.** The plurals entry's bare
+  `%d` rendered as the literal text "%d names"; `%1$d` works. (The
+  `%1$s`-style args elsewhere were already fine.)
+- **`Context.getString` has no non-composable Compose-resources
+  equivalent.** `NameListScreen.buildMeaningSearchUrl` read the search-query
+  string off a `Context` inside a click handler; it now takes the resolved
+  text, read with `stringResource` in composable scope by each of its three
+  call sites.
+
+`app_name` is the one string deliberately duplicated: `AndroidManifest.xml`'s
+`android:label` can only read a classic Android resource, so a two-entry
+`app/src/main/res/values{,-pt}/strings.xml` now holds the launcher label
+while the in-UI app name comes from the shared Compose resources.
+
+Verified on a running emulator (API 36), not just by building: the list
+screen renders 7,481 names with correct `GenderTag` badges and a correctly
+formatted "7481 names" count, the apostrophes render properly, and
+switching the app locale to `pt-PT` (`cmd locale set-app-locales`) shows the
+whole UI - list and settings screens - in Portuguese from
+`composeResources/values-pt`, plural included.
+
+**All four feature modules are now real KMP modules** (`androidTarget` +
+`wasmJs`), built on Compose Multiplatform rather than the androidx Compose
+BOM. The pieces that made this possible without rewriting the screens:
+- **JetBrains' multiplatform AndroidX builds** for lifecycle
+  (`org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose` /
+  `-runtime-compose`, 2.9.6) keep the same package names and APIs, so
+  `androidx.lifecycle.ViewModel`, `viewModelScope` and
+  `collectAsStateWithLifecycle` needed no import changes at all.
+- **Koin's multiplatform Compose artifacts**: `org.koin.androidx.compose.
+  koinViewModel` → `org.koin.compose.viewmodel.koinViewModel`. `:app`'s
+  `viewModelModule` already used `org.koin.core.module.dsl.viewModelOf`,
+  which is the multiplatform DSL, so the DI side is unchanged.
+- Note for anyone copying these build files: in Kotlin 2.3 a KMP source-set
+  block can't call `platform(...)` directly (KT-58759), it has to be
+  `project.dependencies.platform(libs.koin.bom)`.
+
+The genuinely platform-specific bits became `expect`/`actual` pairs, each
+with a real web answer rather than a stub:
+- `feature:settings` - `rememberAppLanguageSettingsLauncher()`: Android
+  hands off to the OS per-app language screen; web returns `null` and the
+  Settings screen **omits the language card entirely**, since a browser
+  page follows the browser's own language and a button there could do
+  nothing.
+- `feature:namelist` - `rememberExternalUrlOpener()` (Custom Tab →
+  `window.open(url, "_blank", "noopener")`), `isInAppBrowserSupported()`
+  and `InAppBrowser()`. The WebView-backed name-meaning sheet moved
+  wholesale into `androidMain`; on web `isInAppBrowserSupported()` is
+  **false on purpose** - search engines refuse to be framed
+  (`X-Frame-Options`/`frame-ancestors`), so the web build opens the search
+  in a new tab instead of an in-page panel that could only ever be blank.
+- `feature:namelist` - `PlatformBackHandler()`: `androidx.activity.compose.
+  BackHandler` on Android, a no-op on web (Compose Multiplatform 1.8.2 has
+  no common `BackHandler`, and hooking the browser's history button belongs
+  with the navigation step, not here).
+- `feature:splash` - no expect/actual needed: `SplashScreen` now takes a
+  `Painter` instead of an `@DrawableRes Int`, so it stays off any one
+  platform's resource system while keeping the "the splash doesn't know
+  which app it's branding" decision from Phase 2. `:app` passes
+  `painterResource(R.drawable.ic_launcher_foreground)`.
+
+Two API changes were forced by Compose Multiplatform 1.8.2's slightly older
+Material3: `ExposedDropdownMenuAnchorType` doesn't exist there yet
+(`MenuAnchorType` does), and `android.net.Uri.Builder` had to go - the
+meaning-search URL is now built with a small `encodeUrlQueryValue()` in
+common code.
+
+Verified on the emulator again after the conversion, since this touched the
+name-meaning path directly: tapping a name still opens the in-app WebView
+sheet, with the hand-rolled percent-encoding producing the same search URL
+(apostrophe included) the `Uri.Builder` did.
+
+**`composeApp` is now the real app shell, and the web build runs the whole
+app.** This is the step where the migration stops being structural and
+starts being visible:
+- **`core:navigation`** finally exists, holding `Routes` and
+  `NavTransitions`. The dependency that blocked it in Phase 0 - `Routes`
+  needing `SyncOrigin` from `feature:sync` - is gone because `SyncOrigin`
+  moved *here*: it only ever picked a distinct route, and the sync screen
+  never reads it, so navigation is where it belongs. Navigation itself is
+  now JetBrains' multiplatform `navigation-compose`.
+- **`PickANameNavHost` and the whole Koin graph moved into `composeApp`**,
+  which is the one module allowed to see every feature. `appModules()`
+  assembles repositories + use cases + view models (all shared) plus an
+  `expect fun platformModule()`: Room/SharedPreferences/CIO on Android,
+  `localStorage`/`StorageSettings`/Ktor-JS in the browser. Both shells -
+  `:app`'s `PickANameApplication` and `webApp`'s `main()` - register exactly
+  the same list.
+- **`:app` is now a thin Android shell**: `MainActivity`, the manifest,
+  launcher resources, Koin startup. Its leftover domain/use-case tests
+  (deferred since Phase 1) moved with their code into `core:domain`'s
+  `androidUnitTest`, and `TraditionalNameRulesTest` was ported to
+  `kotlin.test` in `core:model`'s `commonTest`, where it now runs on both
+  targets. `androidApp` became a real second shell (its own Application and
+  Koin startup) so the side-by-side comparison Phase 7 needs actually works.
+
+Three web-only problems surfaced, all of which only a running browser could
+have shown:
+1. **Compose version skew → `IrLinkageError` at runtime.** JetBrains'
+   lifecycle 2.9.6 and navigation 2.9.2 pull Compose 1.10.x transitively,
+   while the plugin still pinned **1.8.2** - the app compiled fine and then
+   died on `ComposeViewport` not existing with that signature. Fixed by
+   moving Compose Multiplatform to **1.10.2**, which is still fine under
+   this repo's AGP 8.13.2 / compileSdk 36 (Android build, unit tests and
+   lint all re-verified). Worth remembering for later bumps: the *runtime*
+   is what the transitive AndroidX-multiplatform artifacts decide, so the
+   plugin version has to keep up with them.
+2. **webpack failed the build over Skiko's dynamic exports.** As soon as a
+   real ESM npm package (pdf.js) is in the bundle, webpack's
+   `exportsPresence` check turns `export 'skikoApi' was not found in
+   './skiko.mjs'` from a warning into an error.
+   `webApp/webpack.config.d/skiko-exports.js` downgrades that one check.
+3. **A failed browser `fetch` is not an `Exception`.** `NameSyncRepositoryImpl`
+   caught `Exception`, but Kotlin/Wasm surfaces a rejected fetch as
+   `JsException`, which extends `Throwable` directly - so a CORS failure
+   escaped the coroutine and the Sync screen span forever. Both catch
+   boundaries now catch `Throwable`, and the web build shows the real
+   "Couldn't reach the names source" error state instead.
+   (`index.html` also needed `html, body { height: 100% }`, or Compose sizes
+   its canvas to a thin strip.)
+
+Verified in a real browser (headless Chrome with software WebGL, serving the
+production `wasmJsBrowserDistribution`): splash → sync, Material 3 theming,
+typography, icons, Compose-resource strings and the error state all render,
+Koin resolves the browser-backed stores, and the sync attempt fails exactly
+the way R3 says it must. The distribution is ~16 MB uncompressed now that
+pdf.js is in it (R6).
+
+### R3 decision (made by the repo owner): ship a CI-generated snapshot
+
+Of the two options above, the chosen direction is **snapshot, not
+degrade**: a CI job fetches and parses the source PDF and publishes a small
+names file alongside the Pages site, the web build loads that same-origin
+file, and **the web Settings screen drops the sync/source controls
+entirely** (they'd be meaningless there). That is the next PR's work, not
+this one. What it needs:
+- a scheduled + `workflow_dispatch` GitHub Actions job that downloads the
+  PDF (**with a `User-Agent`** - the host 502s requests without one),
+  extracts text, runs `NameListTextParser`, and writes the snapshot;
+- a decision on where the parse runs: the cheapest honest option is a JVM
+  target for `core:parser` using Apache PDFBox, which is exactly what this
+  session already used as the reference implementation;
+- a snapshot loader behind the existing `NameSyncRepository` interface on
+  web (fetch + parse the snapshot, no PDF work in the browser), which also
+  means pdf.js stops being on the web critical path - keep it for a
+  user-supplied CORS-enabled URL, or drop it from the web bundle to reclaim
+  ~1.5 MB;
+- `feature:settings` hiding the source-URL and refresh-period cards on web,
+  the same way it already hides the language card
+  (`rememberAppLanguageSettingsLauncher()` returning null is the pattern).
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**
@@ -799,3 +1122,114 @@ unstated gap:
 - Does not fragment modules further than §3's layout "just in case" — the
   boundaries are drawn around the app's actual four features and its actual
   technical concerns, not a generic template applied for its own sake.
+
+## 9. Gaps in this plan, found while implementing Phase 3
+
+Things the phases above don't cover, written down as they surfaced rather
+than left implicit. Roughly in order of how much they'd hurt if ignored.
+
+### 9.1 CI cannot currently catch a broken web build - or a working build that dies at runtime
+
+`pr-checks.yml` runs lint, Android unit tests, the emulator suite and an
+APK build. It never builds wasmJs; `deploy-web.yml` does, but only *after*
+merge to `main`. Now that the web target is the real app rather than a
+placeholder, that gap means a PR can go green and break the site.
+
+Worse, a build check alone wouldn't have caught this phase's most expensive
+bug: the Compose version skew compiled perfectly and only failed when the
+page loaded (`IrLinkageError`). So Phase 5 needs **two** web checks, not
+one:
+- `:webApp:wasmJsBrowserDistribution` on every PR, plus the module
+  `wasmJsTest` suites (they run in headless Chrome on a CI runner the same
+  way they do locally);
+- a **runtime smoke check** that actually loads the built page in a browser
+  and fails on any uncaught exception. A `runComposeUiTest` in
+  `composeApp`'s `commonTest` that mounts `App()` would cover the same
+  class of failure and run on both targets.
+
+Until that exists, the `kotlin-js-store/` decision (§ gitignored today)
+can't be revisited either, since a lock mismatch would surface post-merge.
+
+### 9.2 `build-logic` convention plugins are now overdue
+
+Phase 0 deferred them with an explicit trigger: "once Phase 2's feature
+modules make the per-module boilerplate repeat enough to be worth
+abstracting". That threshold has passed - there are 15 modules, and the
+KMP ones' `build.gradle.kts` files are near-identical (same two targets,
+same `jvmTarget`, same `compileSdk`/`minSdk`, same Compose set). Three of
+them in this phase were written by copying another module's file. The next
+structural change (a new target, an AGP bump, a compileSdk bump) has to be
+made 15 times by hand.
+
+### 9.3 The settings-store swap silently dropped existing users' preferences
+
+Phase 1 moved `SettingsRepositoryImpl` from DataStore Preferences to
+multiplatform-settings backed by `SharedPreferencesSettings("pick_a_name_
+settings")`, with **no migration** from the old DataStore file. For anyone
+who already had the app installed, that resets the configured source URL,
+the refresh period and the last-refresh timestamp to defaults on first
+launch after the update (the reset timestamp also forces one extra sync).
+
+This already shipped (it went to `main` before this branch), so it can't be
+prevented now - but it should be recorded rather than discovered later from
+a user report, and the same care is owed to any future store swap. If the
+data matters, a one-time read of the old DataStore file on Android is still
+possible.
+
+### 9.4 The snapshot decision (R3) needs a JVM target that doesn't exist yet
+
+The chosen R3 direction - a CI-generated snapshot - has to parse the PDF
+*somewhere that isn't a browser or an Android device*. `core:parser` has no
+`jvm()` target today, and its Android actual uses `pdfbox-android`. The
+straightforward route is a JVM target whose actual uses Apache PDFBox
+(exactly the reference implementation this phase compared pdf.js against),
+driven by a small Gradle task the workflow calls. That's a new target and a
+new dependency - not a detail of Phase 4, a small piece of design.
+
+It also raises questions Phase 4 should answer explicitly: how the web UI
+communicates snapshot freshness ("list as of <date>"), and what happens
+when the scheduled job fails (stale snapshot, or visible warning?).
+
+### 9.5 The web build has no URL, history, title or icon story
+
+Navigation works, but the browser's address bar never changes - every
+screen is `/index.html`, so links can't be shared, refresh always restarts
+at splash, and the browser back button does nothing (`PlatformBackHandler`
+is deliberately a no-op on web). The page also 404s on `favicon.ico` and
+the tab title is static. None of this is covered by Phase 4's "responsive
+layout tweaks"; it's the difference between "the app renders in a browser"
+and "it behaves like a web page".
+
+### 9.6 Binary size has a number but no budget (R6)
+
+The production distribution is ~16 MB uncompressed (~8 MB of that is
+skiko.wasm, ~1.5 MB pdf.js). `deploy-web.yml` prints the size but nothing
+acts on it. Phase 4 should set a target and name the levers: dropping
+pdf.js from the web bundle once snapshots land (it stays useful only for a
+user-supplied CORS-enabled URL), and checking what GitHub Pages actually
+serves compressed.
+
+### 9.7 The only end-to-end Android test is still disabled
+
+`SplashSmokeTest` has been `@Ignore`d since PR #38 for CI flakiness, so the
+instrumented job currently proves only that the app compiles and installs.
+This phase rewired `MainActivity` onto `composeApp` - exactly the kind of
+change that test exists to catch. Phase 5/6 should own re-enabling it (and
+it is worth re-checking now: it passes locally on a real emulator).
+
+### 9.8 Smaller items
+
+- **`material-icons-extended` is pinned at 1.7.3**, the last multiplatform
+  release JetBrains published. It works (icons are just `ImageVector`s) but
+  it is a dead coordinate; a maintained icon source will be needed
+  eventually.
+- **iOS** appears only as an aside in code comments. The plan should either
+  add it as a phase or state that it is out of scope, so the `expect`/
+  `actual` boundaries drawn now are judged against a stated intent.
+- **No shared UI tests at all.** Compose Multiplatform supports
+  `runComposeUiTest` in `commonTest`; the four feature modules currently
+  have ViewModel tests only.
+- **Two Android shells now exist** (`:app` and `androidApp`) with separate
+  Applications and manifests. That is the intended Phase 7 setup, but it
+  means every Android-shell change has to be made twice until `:app` is
+  retired - so Phase 7 shouldn't drift.

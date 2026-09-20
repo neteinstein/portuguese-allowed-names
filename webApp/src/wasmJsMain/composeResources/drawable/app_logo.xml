@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The web shell's brand mark, passed to the shared App()/SplashScreen - a copy of :app's adaptive
+  icon foreground, since app identity belongs to each platform shell rather than to shared code
+  (MIGRATION_PLAN.md §3.1). Keep the two in sync when the icon changes.
+
+  Adaptive icon foreground: a names-list "card" (rounded rect + 3 text lines) with an
+  "officially approved" checkmark seal badge — represents the government-approved Portuguese
+  first-names list this app surfaces. Geometry generated from a single Python source of truth
+  (see session tooling) and cross-checked with a rasterized preview before authoring, so the
+  numbers here are exact, not eyeballed.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Soft drop shadow under the card -->
+    <path
+        android:pathData="M38.5,25.5 H72.5 A10,10 0 0 1 82.5,35.5 V75.5 A10,10 0 0 1 72.5,85.5 H38.5 A10,10 0 0 1 28.5,75.5 V35.5 A10,10 0 0 1 38.5,25.5 Z"
+        android:fillColor="#29000000" />
+
+    <!-- Document / list card -->
+    <path
+        android:pathData="M37,24 H71 A10,10 0 0 1 81,34 V74 A10,10 0 0 1 71,84 H37 A10,10 0 0 1 27,74 V34 A10,10 0 0 1 37,24 Z"
+        android:fillColor="#FFFFFFFF" />
+
+    <!-- List rows: two brand-blue lines, one gold accent line -->
+    <path
+        android:pathData="M40,38 H68 A3,3 0 0 1 71,41 V41 A3,3 0 0 1 68,44 H40 A3,3 0 0 1 37,41 V41 A3,3 0 0 1 40,38 Z"
+        android:fillColor="#FF00599D" />
+    <path
+        android:pathData="M40,50 H68 A3,3 0 0 1 71,53 V53 A3,3 0 0 1 68,56 H40 A3,3 0 0 1 37,53 V53 A3,3 0 0 1 40,50 Z"
+        android:fillColor="#FF00599D" />
+    <path
+        android:pathData="M40,62 H56 A3,3 0 0 1 59,65 V65 A3,3 0 0 1 56,68 H40 A3,3 0 0 1 37,65 V65 A3,3 0 0 1 40,62 Z"
+        android:fillColor="#FFF0B21D" />
+
+    <!-- "Approved" checkmark seal badge: white separation ring + gold fill + white check -->
+    <path
+        android:pathData="M56.5,71 A14.5,14.5 0 1 0 85.5,71 A14.5,14.5 0 1 0 56.5,71 Z"
+        android:fillColor="#FFFFFFFF" />
+    <path
+        android:pathData="M59,71 A12,12 0 1 0 83,71 A12,12 0 1 0 59,71 Z"
+        android:fillColor="#FFF0B21D" />
+    <path
+        android:pathData="M65,71.6 L69.8,75.8 L77,66.8"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+</vector>
