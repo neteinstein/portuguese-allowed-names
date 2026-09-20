@@ -1,8 +1,40 @@
+@file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.library)
-    alias(libs.plugins.jetbrains.kotlin.android)
+}
+
+kotlin {
+    androidTarget {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
+    wasmJs {
+        browser()
+    }
+
+    sourceSets {
+        commonMain.dependencies {
+            // Only ktor-client-core: NameListRemoteDataSource takes an already-built HttpClient
+            // via constructor injection, so this module never touches a concrete engine itself.
+            // The engine (CIO on Android, ktor-client-js on wasmJs once a web DI module exists)
+            // is chosen by whoever constructs that HttpClient - today :app's own AppModule.kt,
+            // same "leaky by design" split as core:datastore's FlowSettings.
+            implementation(libs.ktor.client.core)
+        }
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.junit)
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.truth)
+                implementation(libs.ktor.client.mock)
+            }
+        }
+    }
 }
 
 android {
@@ -17,24 +49,4 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-    }
-}
-
-dependencies {
-    implementation(libs.ktor.client.core)
-    // CIO rather than the OkHttp engine: ktor-client-okhttp 3.6.0 transitively pulls in
-    // okhttp-android 5.5.0, which requires compileSdk 37+ (this repo is on 36 - see
-    // MIGRATION_PLAN.md). CIO is a pure-Kotlin/coroutines engine with no such AAR metadata
-    // constraint, and is equally fine for our plain GET-and-download-bytes use case.
-    implementation(libs.ktor.client.cio)
-
-    testImplementation(libs.junit)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.truth)
-    testImplementation(libs.ktor.client.mock)
 }

@@ -379,6 +379,28 @@ check is still a single `curl -sI -H "Origin: https://<pages-domain>"
 <source-url>` run from an unrestricted network (or a browser console)
 looking for `Access-Control-Allow-Origin` in the response.
 
+**`core:network` is now a real KMP module** (`androidTarget` + `wasmJs`),
+same story as `core:datastore`: `NameListRemoteDataSource` was already
+written entirely against Ktor's platform-agnostic `HttpClient` type with
+zero engine-specific code, taking a pre-built `HttpClient` via constructor
+injection - the actual engine choice (`CIO` on Android today) already
+lived in `:app`'s own `AppModule.kt`. Pure source-set move:
+`NameListRemoteDataSource.kt` into `commonMain`,
+`NameListRemoteDataSourceTest.kt` into `androidUnitTest`.
+
+One real fix alongside the move: `core:network`'s `build.gradle.kts` had
+carried an `implementation(libs.ktor.client.cio)` dependency that nothing
+in the module's own source actually used (confirmed by grep - only
+`ktor-client-core` types are imported). Left in place, this would have
+broken the new `wasmJs` target outright, since `ktor-client-cio` doesn't
+publish a `wasmJs` artifact at all (CIO is JVM/Native-only; the wasmJs
+engine is `ktor-client-js`). Dropped it. No engine dependency of any kind
+was added back, for either target: this module doesn't need one, only
+whoever *constructs* the `HttpClient` does - `:app`'s `AppModule.kt` for
+Android today, and a future `composeApp` web DI module for `wasmJs`
+(needing `ktor-client-js`, not yet added to the version catalog since
+nothing consumes it yet).
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**
