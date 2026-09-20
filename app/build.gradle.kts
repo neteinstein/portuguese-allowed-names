@@ -95,6 +95,7 @@ dependencies {
     implementation(project(":feature:settings"))
     implementation(project(":feature:sync"))
     implementation(project(":feature:namelist"))
+    implementation(project(":feature:splash"))
 
     // Core Android dependencies
     implementation(libs.androidx.core.ktx)
@@ -110,7 +111,6 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
 
     // Dependency Injection - Koin

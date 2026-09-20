@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import org.neteinstein.pickaname.R
 import org.neteinstein.pickaname.presentation.namelist.NameListScreen
 import org.neteinstein.pickaname.presentation.settings.SettingsScreen
 import org.neteinstein.pickaname.presentation.splash.SplashScreen
@@ -42,7 +43,8 @@ fun PickANameNavHost(navController: NavHostController = rememberNavController())
                     navController.navigate(Routes.NAME_LIST) {
                         popUpTo(Routes.SPLASH) { inclusive = true }
                     }
-                }
+                },
+                logoRes = R.drawable.ic_launcher_foreground
             )
         }
         composable(

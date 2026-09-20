@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -43,7 +44,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
-import org.neteinstein.pickaname.R as AppR
 import org.neteinstein.pickaname.core.designsystem.R
 import org.neteinstein.pickaname.presentation.theme.PickANameGradients
 import org.neteinstein.pickaname.presentation.theme.SplashTitleStyle
@@ -53,15 +53,21 @@ import org.neteinstein.pickaname.presentation.theme.SplashTitleStyle
  * [SplashViewModel]) whether the DB still needs its initial population and then navigates
  * accordingly, without any user interaction.
  *
- * This is the *second* stage of the splash experience: [org.neteinstein.pickaname.MainActivity]
- * already shows the system `core-splashscreen` (brand color + static icon) for the instant
- * between process start and the first Compose frame, then this composable takes over with the
- * full animated brand moment for [SplashViewModel]'s minimum duration.
+ * This is the *second* stage of the splash experience: the app's `MainActivity` already shows
+ * the system `core-splashscreen` (brand color + static icon) for the instant between process
+ * start and the first Compose frame, then this composable takes over with the full animated
+ * brand moment for [SplashViewModel]'s minimum duration.
+ *
+ * [logoRes] is supplied by the caller rather than looked up here: this module has no dependency
+ * on `:app` (feature modules never depend on the app shell - see MIGRATION_PLAN.md §3.1), and the
+ * launcher icon is app-identity, not shared design-system UI, so it can't live in
+ * `core:designsystem` either.
  */
 @Composable
 fun SplashScreen(
     onNavigateToSync: () -> Unit,
     onNavigateToNameList: () -> Unit,
+    @DrawableRes logoRes: Int,
     viewModel: SplashViewModel = koinViewModel()
 ) {
     val destination by viewModel.destination.collectAsStateWithLifecycle()
@@ -74,11 +80,11 @@ fun SplashScreen(
         }
     }
 
-    SplashContent()
+    SplashContent(logoRes = logoRes)
 }
 
 @Composable
-private fun SplashContent() {
+private fun SplashContent(@DrawableRes logoRes: Int) {
     var showLogo by remember { mutableStateOf(false) }
     var showText by remember { mutableStateOf(false) }
 
@@ -130,7 +136,7 @@ private fun SplashContent() {
                             .background(Color.White, CircleShape)
                     )
                     Image(
-                        painter = painterResource(AppR.drawable.ic_launcher_foreground),
+                        painter = painterResource(logoRes),
                         contentDescription = null,
                         modifier = Modifier.size(120.dp)
                     )

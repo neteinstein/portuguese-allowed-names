@@ -1,8 +1,44 @@
+@file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.library)
-    alias(libs.plugins.jetbrains.kotlin.android)
+}
+
+kotlin {
+    androidTarget {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
+    wasmJs {
+        browser()
+    }
+
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project(":core:model"))
+            implementation(project(":core:domain"))
+            // api, not implementation: :app's own DataStoreModule.kt builds the FlowSettings/
+            // SharedPreferencesSettings directly, so it needs these on its own compile classpath
+            // too (see MIGRATION_PLAN.md Phase 1's "leaky by design" note).
+            api(libs.multiplatform.settings)
+            api(libs.multiplatform.settings.coroutines)
+            implementation(libs.kotlinx.coroutines.core)
+        }
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.junit)
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.truth)
+                implementation(libs.turbine)
+                // MapSettings lives here, not in the main multiplatform-settings artifact.
+                implementation(libs.multiplatform.settings.test)
+            }
+        }
+    }
 }
 
 android {
@@ -17,27 +53,4 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-    }
-}
-
-dependencies {
-    implementation(project(":core:model"))
-    implementation(project(":core:domain"))
-    // api, not implementation: :app's own DataStoreModule.kt builds the FlowSettings/
-    // SharedPreferencesSettings directly, so it needs these on its own compile classpath too.
-    api(libs.multiplatform.settings)
-    api(libs.multiplatform.settings.coroutines)
-    implementation(libs.kotlinx.coroutines.core)
-
-    testImplementation(libs.junit)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.truth)
-    testImplementation(libs.turbine)
-    // MapSettings lives here, not in the main multiplatform-settings artifact.
-    testImplementation(libs.multiplatform.settings.test)
 }

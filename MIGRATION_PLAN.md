@@ -304,6 +304,81 @@ doesn't build wasmJs itself) - acceptable since Phase 2's four extractions
 are Android-only anyway (§5); revisit once Phase 5 adds a real
 `wasmJsBrowserTest`/build check to `pr-checks.yml` for every PR.
 
+**`feature:splash` extraction (fourth and last of Phase 2's four feature
+modules)** hit the same class of problem `feature:namelist` did with
+`GenderTag`, but in a shape that couldn't be solved by moving a file:
+`SplashScreen.kt` renders `AppR.drawable.ic_launcher_foreground` - the
+app's launcher icon, deliberately kept in `:app`'s own resources rather
+than `core:designsystem` back in the very first Phase 2 CI round (it's
+app-identity, not shared UI). A `feature:*` module structurally cannot
+depend on `:app` (§3.1: dependencies only point inward), so `feature:splash`
+can't reach that drawable by import, and duplicating the launcher icon
+into `core:designsystem` would contradict that earlier, correct call.
+
+Fixed by inverting the dependency instead of relocating the asset:
+`SplashScreen`/`SplashContent` now take a `@DrawableRes logoRes: Int`
+parameter rather than reaching for a hardcoded resource themselves, and
+`PickANameNavHost.kt` (staying in `:app`, the one place that already knows
+about all of `:app`'s own resources) passes
+`R.drawable.ic_launcher_foreground` in at the call site. This is a real
+(small) design improvement, not just a migration workaround: the splash
+composable no longer needs to know *which* app it's branding, which is
+exactly the kind of decoupling feature-module boundaries are supposed to
+force.
+
+`SplashViewModel.kt`/`SplashViewModelTest.kt` moved with zero changes
+(same pattern as every prior extraction). Also removed
+`androidx.material.icons.extended` from `:app`'s own `build.gradle.kts`:
+with `NameListScreen`/`GenderTag`/`SyncScreen` all moved out over the last
+three rounds, nothing left in `:app`'s own source references any Material
+icon at all.
+
+**Phase 2 is now content-complete**: all four features (`settings`,
+`sync`, `namelist`, `splash`) live in their own modules. What's left of
+`:app` is `MainActivity`, the manifest, launcher icons/proguard rules, DI
+wiring (`di/*Module.kt`), and `PickANameNavHost`/`Routes` (deferred to
+Phase 3 alongside the real Navigation-Compose swap, per §5's original
+plan). The one thing Phase 2's roadmap description also called for -
+"moving `PickANameNavHost` assembly into `composeApp`" - is deliberately
+**not** done in this round: `composeApp`/`androidApp` are still Phase 0
+placeholders (`androidApp`'s `MainActivity` even lives in an isolated
+`.../next/` package), and retiring `:app` in favor of them is coupled to
+`release.yml` (hardcoded `app/` paths for the keystore, the versionName
+bump regex, and build output paths). That cutover deserves its own
+careful, explicitly-reviewed step rather than riding along with a feature
+extraction.
+
+**Phase 3 (web actuals) is started**, first step: **`core:datastore` is
+now a real KMP module** (`androidTarget` + `wasmJs`), not
+`com.android.library`. This one needed almost no code change:
+`SettingsRepositoryImpl` was already written entirely against
+`multiplatform-settings`'s `FlowSettings` interface with no Android-
+specific code at all (the one genuinely platform-specific piece - actually
+constructing a `SharedPreferencesSettings` on Android - already lived in
+`:app`'s own `DataStoreModule.kt`, not in this module), so converting it
+was purely mechanical: move `SettingsRepositoryImpl.kt` into
+`commonMain`, and `SettingsRepositoryImplTest.kt` into `androidUnitTest`
+(kept on JUnit4/mockk/truth/turbine for now rather than rewritten against
+`kotlin.test` - a full `commonTest` port for every module is Phase 5
+work, per §5). No `wasmJsMain` actuals were needed in this module at
+all - `multiplatform-settings` ships its own ready-made browser-
+`localStorage`-backed `Settings` for wasmJs already; a future web
+`composeApp` DI wiring step is what will actually construct and inject
+one, the same way `:app`'s `DataStoreModule.kt` does for Android today.
+
+**Also checked, and blocked**: tried to verify risk R3 (does the IRN PDF
+source send CORS headers a browser `fetch`/Ktor-JS call could use) with a
+plain `curl -H "Origin: ..."` against the real source URL from this
+sandbox. Got back a same-shape 403 as every other blocked external host
+in this environment (confirmed via the proxy's own status endpoint: a
+`connect_rejected` policy denial, not a real response from
+`irn.justica.gov.pt`) - this sandbox's network policy blocks that host
+outright, the same class of limitation as `dl.google.com` blocking local
+Gradle builds all along. R3 stays genuinely unverified; the cheapest real
+check is still a single `curl -sI -H "Origin: https://<pages-domain>"
+<source-url>` run from an unrestricted network (or a browser console)
+looking for `Access-Control-Allow-Origin` in the response.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**
@@ -562,6 +637,37 @@ incrementally instead of as one large "move everything" commit.
 - Only then: rebase onto `main`, open the "real" PR, let CI + review gate
   the actual merge. `release.yml` (Play Store) and `deploy-web.yml` (GitHub
   Pages) become the two release paths off the same `main`.
+
+### Phase 7 — Retire `:app` in favor of `composeApp`/`androidApp`
+Not part of the original six phases above - surfaced during Phase 2 (first
+called out in the `feature:splash` PR) as a prerequisite that got
+deferred out rather than folded into a feature extraction, since it's
+riskier and touches the release pipeline rather than just app code.
+Recorded here as its own explicit, last phase so it doesn't stay an
+unstated gap:
+
+- Move what's left in `:app` - `MainActivity`, `AndroidManifest.xml`,
+  launcher icon resources, `proguard-rules.pro`, the `di/*Module.kt` Koin
+  wiring, and `PickANameNavHost`/`Routes` (plus the nav-transition specs) -
+  into `androidApp` (thin Android launcher shell) and `composeApp` (the
+  one module allowed to see every feature module, per §3.1) respectively,
+  matching §3's original target module layout.
+- Delete the `:app` module and its `settings.gradle.kts` entry once
+  nothing references it.
+- Update `release.yml`, which is hardcoded to `app/` paths throughout:
+  the keystore decode target, the `versionName` bump `sed`/grep (currently
+  matched against `app/build.gradle.kts`), and the release APK/AAB output
+  paths (`app/build/outputs/...`). Also re-check `assembleRelease`/
+  `bundleRelease` (invoked bare, with no module prefix) still resolve
+  unambiguously once `androidApp` - not `:app` - is the only
+  `com.android.application` module in the graph.
+- Verify with an actual signed release build (or as close to one as CI
+  secrets allow) before calling this done - `release.yml` is what ships
+  to the Play Store, so this is the one Phase 7 step that's riskier to get
+  wrong than to leave alone, and it's the reason this work stayed out of
+  Phase 2 in the first place.
+- Only after this lands does `composeApp` stop being a Phase 0 placeholder
+  and start being the real app shell §3 always described it as.
 
 ## 6. Risk register
 
