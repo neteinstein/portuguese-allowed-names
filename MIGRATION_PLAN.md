@@ -348,6 +348,37 @@ bump regex, and build output paths). That cutover deserves its own
 careful, explicitly-reviewed step rather than riding along with a feature
 extraction.
 
+**Phase 3 (web actuals) is started**, first step: **`core:datastore` is
+now a real KMP module** (`androidTarget` + `wasmJs`), not
+`com.android.library`. This one needed almost no code change:
+`SettingsRepositoryImpl` was already written entirely against
+`multiplatform-settings`'s `FlowSettings` interface with no Android-
+specific code at all (the one genuinely platform-specific piece - actually
+constructing a `SharedPreferencesSettings` on Android - already lived in
+`:app`'s own `DataStoreModule.kt`, not in this module), so converting it
+was purely mechanical: move `SettingsRepositoryImpl.kt` into
+`commonMain`, and `SettingsRepositoryImplTest.kt` into `androidUnitTest`
+(kept on JUnit4/mockk/truth/turbine for now rather than rewritten against
+`kotlin.test` - a full `commonTest` port for every module is Phase 5
+work, per §5). No `wasmJsMain` actuals were needed in this module at
+all - `multiplatform-settings` ships its own ready-made browser-
+`localStorage`-backed `Settings` for wasmJs already; a future web
+`composeApp` DI wiring step is what will actually construct and inject
+one, the same way `:app`'s `DataStoreModule.kt` does for Android today.
+
+**Also checked, and blocked**: tried to verify risk R3 (does the IRN PDF
+source send CORS headers a browser `fetch`/Ktor-JS call could use) with a
+plain `curl -H "Origin: ..."` against the real source URL from this
+sandbox. Got back a same-shape 403 as every other blocked external host
+in this environment (confirmed via the proxy's own status endpoint: a
+`connect_rejected` policy denial, not a real response from
+`irn.justica.gov.pt`) - this sandbox's network policy blocks that host
+outright, the same class of limitation as `dl.google.com` blocking local
+Gradle builds all along. R3 stays genuinely unverified; the cheapest real
+check is still a single `curl -sI -H "Origin: https://<pages-domain>"
+<source-url>` run from an unrestricted network (or a browser console)
+looking for `Access-Control-Allow-Origin` in the response.
+
 ## 1. Goal
 
 Turn Pick-A-Name from a single Android Gradle module into a **feature-modular**
