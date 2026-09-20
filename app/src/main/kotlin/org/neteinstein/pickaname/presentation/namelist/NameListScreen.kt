@@ -4,6 +4,8 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
@@ -64,6 +66,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -663,6 +666,7 @@ private fun NameMeaningOverlay(entry: NameEntry?, searchEngine: SearchEngine, on
 private fun NameMeaningBottomSheetContent(entry: NameEntry, searchEngine: SearchEngine) {
     val context = LocalContext.current
     val searchUrl = remember(entry, searchEngine) { buildMeaningSearchUrl(context, entry, searchEngine) }
+    var isLoading by remember { mutableStateOf(true) }
 
     Column(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f)) {
         Text(
@@ -671,47 +675,63 @@ private fun NameMeaningBottomSheetContent(entry: NameEntry, searchEngine: Search
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
         )
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { ctx ->
-                WebView(ctx).apply {
-                    setBackgroundColor(android.graphics.Color.WHITE)
-                    settings.javaScriptEnabled = true
-                    // Modern search result pages (e.g. DuckDuckGo's AI chat answer) use
-                    // localStorage/sessionStorage during their own startup; without this they throw
-                    // and can fail to render at all.
-                    settings.domStorageEnabled = true
-                    // Chromium composites the WebView's frames on its own render thread and
-                    // delivers them asynchronously; invalidating on every loading progress tick
-                    // keeps pulling each newly composited frame onto the screen as it arrives,
-                    // for the initial load and any in-sheet navigation to another result.
-                    webChromeClient = object : WebChromeClient() {
-                        override fun onProgressChanged(view: WebView, newProgress: Int) {
-                            view.invalidate()
+        Box(modifier = Modifier.fillMaxSize()) {
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { ctx ->
+                    WebView(ctx).apply {
+                        setBackgroundColor(android.graphics.Color.WHITE)
+                        settings.javaScriptEnabled = true
+                        // Modern search result pages (e.g. DuckDuckGo's AI chat answer) use
+                        // localStorage/sessionStorage during their own startup; without this they throw
+                        // and can fail to render at all.
+                        settings.domStorageEnabled = true
+                        // Chromium composites the WebView's frames on its own render thread and
+                        // delivers them asynchronously; invalidating on every loading progress tick
+                        // keeps pulling each newly composited frame onto the screen as it arrives,
+                        // for the initial load and any in-sheet navigation to another result.
+                        webChromeClient = object : WebChromeClient() {
+                            override fun onProgressChanged(view: WebView, newProgress: Int) {
+                                view.invalidate()
+                            }
                         }
-                    }
-                    webViewClient = object : WebViewClient() {
-                        override fun onPageCommitVisible(view: WebView, url: String) {
-                            view.invalidate()
+                        webViewClient = object : WebViewClient() {
+                            override fun onPageCommitVisible(view: WebView, url: String) {
+                                view.invalidate()
+                                isLoading = false
+                            }
+
+                            override fun onReceivedError(
+                                view: WebView,
+                                request: WebResourceRequest,
+                                error: WebResourceError
+                            ) {
+                                if (request.isForMainFrame) isLoading = false
+                            }
                         }
-                    }
-                    // Without this, the bottom sheet's own drag handling steals vertical swipes
-                    // that start over the WebView, making it impossible to scroll the page inside
-                    // it (e.g. to reach a cookie-consent button below the fold).
-                    setOnTouchListener { view, _ ->
-                        view.parent?.requestDisallowInterceptTouchEvent(true)
-                        false
-                    }
-                    // Some pages read the viewport size while they first run (e.g. to size a
-                    // fixed-position layout) and never recompute it later; loading before this
-                    // WebView has been measured hands them a 0x0 viewport and leaves their layout
-                    // collapsed even after it's resized to its real bounds.
-                    doOnLayout {
-                        loadUrl(searchUrl)
+                        // Without this, the bottom sheet's own drag handling steals vertical swipes
+                        // that start over the WebView, making it impossible to scroll the page inside
+                        // it (e.g. to reach a cookie-consent button below the fold).
+                        setOnTouchListener { view, _ ->
+                            view.parent?.requestDisallowInterceptTouchEvent(true)
+                            false
+                        }
+                        // Some pages read the viewport size while they first run (e.g. to size a
+                        // fixed-position layout) and never recompute it later; loading before this
+                        // WebView has been measured hands them a 0x0 viewport and leaves their layout
+                        // collapsed even after it's resized to its real bounds.
+                        doOnLayout {
+                            loadUrl(searchUrl)
+                        }
                     }
                 }
+            )
+            // Until the page has something to show, the WebView is just a blank white panel, which
+            // on a slow connection looks like the sheet is broken.
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
-        )
+        }
     }
 }
 
