@@ -1233,12 +1233,22 @@ serves compressed.
 
 `SplashSmokeTest` has been `@Ignore`d since PR #38 for CI flakiness, so the
 instrumented job currently proves only that the app compiles and installs.
-This phase rewired `MainActivity` onto `composeApp` - exactly the kind of
-change that test exists to catch - so it is re-enabled, after passing three
-consecutive runs on two emulators (an Android 15 tablet and an Android 17
-phone). If it proves flaky on CI's runners again, the fix is to root-cause
-the emulator/Compose-test synchronisation rather than to disable the only
-end-to-end Android check the project has.
+It is re-enabled - and the "flakiness" turned out to be a wrong assertion,
+not an emulator problem. The test waited for the **app name**, which is on
+the splash screen and the name list but *not* on the sync screen. On a
+fresh install (every CI emulator) the database is empty, so the app routes
+splash → Sync, and the app name is only on screen for
+`SplashViewModel`'s ~900 ms minimum - the test was racing that window and
+losing. It passed locally only because the local emulator already had a
+populated database, which is exactly the sort of difference that makes a
+test look haunted.
+
+It now waits for **any** of the app's legitimate first screens (app name,
+sync loading, sync error, or the list's search hint), read from the real
+Compose resources rather than hardcoded. That removes the race while still
+failing for the regression worth catching: an app that launches to nothing.
+Verified three consecutive runs on two emulators, from a *fresh install*
+(the case that used to fail).
 
 ### 9.8 Smaller items
 

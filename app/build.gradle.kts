@@ -114,6 +114,10 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.truth)
     testImplementation(libs.koin.test)
+    // The smoke test reads the app's real (Compose Multiplatform) strings rather than
+    // hardcoding them, so it keeps working when the copy changes.
+    androidTestImplementation(project(":core:designsystem"))
+    androidTestImplementation(libs.kotlinx.coroutines.android)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
