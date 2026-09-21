@@ -81,9 +81,10 @@ android {
 }
 
 dependencies {
-    // The shared app: theme, nav graph, every feature module and the whole Koin graph live in
-    // composeApp now (MIGRATION_PLAN.md §3.1 / Phase 3). What's left in this module is the
-    // Android shell - MainActivity, the manifest, launcher resources and Koin startup.
+    // This module is the Android shell, and nothing else: MainActivity, the manifest, launcher
+    // resources, proguard rules and Koin startup. The app itself - theme, nav graph, every
+    // feature module and the whole Koin graph - lives in composeApp, which webApp and the iOS
+    // framework use the same way (MIGRATION_PLAN.md §3.1).
     implementation(project(":composeApp"))
     // Still referenced directly by this shell: pdfbox-android's one-time resource loader in
     // PickANameApplication (exposed as api by core:parser).

@@ -18,7 +18,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             // The launcher icon stays app-identity, owned by this shell, and is handed to the
-            // shared App() rather than looked up inside it (see MIGRATION_PLAN.md §3.1).
+            // shared App() rather than looked up inside it (see MIGRATION_PLAN.md §3.1) - the
+            // web and iOS shells pass their own.
             App(logo = painterResource(R.drawable.ic_launcher_foreground))
         }
     }

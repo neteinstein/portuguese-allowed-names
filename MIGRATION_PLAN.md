@@ -1206,15 +1206,19 @@ It also raises questions Phase 4 should answer explicitly: how the web UI
 communicates snapshot freshness ("list as of <date>"), and what happens
 when the scheduled job fails (stale snapshot, or visible warning?).
 
-### 9.5 The web build has no URL, history, title or icon story
+### 9.5 The web build has no URL or history story (title and icon: FIXED)
 
 Navigation works, but the browser's address bar never changes - every
 screen is `/index.html`, so links can't be shared, refresh always restarts
 at splash, and the browser back button does nothing (`PlatformBackHandler`
-is deliberately a no-op on web). The page also 404s on `favicon.ico` and
-the tab title is static. None of this is covered by Phase 4's "responsive
-layout tweaks"; it's the difference between "the app renders in a browser"
-and "it behaves like a web page".
+is deliberately a no-op on web). None of this is covered by Phase 4's
+"responsive layout tweaks"; it's the difference between "the app renders in
+a browser" and "it behaves like a web page".
+
+The page title and icon *are* now sorted: the title is set, and
+`favicon.svg` is the app's adaptive-icon artwork converted to SVG (browsers
+can't read Android vector drawables), which also clears the 404 the console
+used to show on every load.
 
 ### 9.6 Binary size has a number but no budget (R6)
 
@@ -1287,3 +1291,40 @@ failure is misleading - an `OutOfMemoryError` in one module surfaces as
 The use-case tests in `core:domain` stay on JUnit/MockK for now: they are
 pure logic with no platform surface, so running them three times buys less
 than the ViewModel suites did.
+
+## 10. Phase 7, as actually done: one Android shell, not a renamed one
+
+Phase 7's goal was "`composeApp` stops being a placeholder and becomes the
+real app shell", with `:app`'s remains moved into `androidApp` and `:app`
+deleted. The **goal is met**, but the *direction* of the move was inverted,
+deliberately:
+
+**`androidApp` was deleted; `:app` is the Android shell.**
+
+Why that way round:
+- The goal was never about the module's name. `composeApp` now owns the
+  theme, nav graph, every feature module and the whole Koin graph; the
+  Android module owns `MainActivity`, the manifest, launcher resources,
+  proguard rules and Koin startup - which is exactly the "thin Android
+  launcher shell" Phase 7 describes. `webApp` and the iOS framework consume
+  `composeApp` the same way.
+- `:app` is the module the Play Store pipeline points at, in eight places
+  in `release.yml` (keystore path, the `versionName` bump, APK/AAB output
+  paths, artifact names). Renaming it is a rename of the one path that
+  ships to users, and Phase 7 itself demands verification "with an actual
+  signed release build" - which cannot be done from here, because the
+  signing secrets live in GitHub Actions.
+- Keeping two Android shells was itself a problem (§9.8: every shell change
+  had to be made twice). Deleting the duplicate solves that *now*, at zero
+  risk to the release path, instead of trading it for pipeline risk.
+
+What was verified, as close to a real release as local secrets allow: a
+full `assembleRelease` (R8 in full mode, `isShrinkResources`, the real
+proguard rules), signed with a locally generated key, installed on an
+emulator and run. It synced and listed all 7,481 names - so Koin, Room,
+Ktor and pdfbox all survive obfuscation with the DI graph now living in
+`composeApp`.
+
+If the `androidApp` name is still wanted, it is a mechanical rename plus
+those eight `release.yml` paths, and it should be done by someone who can
+watch a real signed release run afterwards.
