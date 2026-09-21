@@ -68,16 +68,6 @@ class SettingsViewModel(
         }
     }
 
-    /**
-     * Re-load the names list without changing any setting - the only "sync" action that makes
-     * sense where the source isn't configurable (the web build, which reads a published
-     * snapshot). Reuses [SettingsEvent.SourceUpdated] because the screen's reaction is the same:
-     * hand off to the sync screen.
-     */
-    fun onCheckForUpdates() {
-        viewModelScope.launch { _events.send(SettingsEvent.SourceUpdated) }
-    }
-
     fun onUrlChange(newUrl: String) {
         _uiState.update { it.copy(sourceUrl = newUrl, urlError = false) }
     }

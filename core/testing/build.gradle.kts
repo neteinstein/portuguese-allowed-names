@@ -1,8 +1,39 @@
+@file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.library)
-    alias(libs.plugins.jetbrains.kotlin.android)
+}
+
+kotlin {
+    androidTarget {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
+    wasmJs {
+        browser()
+    }
+    iosArm64()
+    iosSimulatorArm64()
+
+    sourceSets {
+        commonMain.dependencies {
+            // The fakes implement the domain's repository interfaces.
+            api(project(":core:model"))
+            api(project(":core:domain"))
+            // api, not implementation: every consumer's tests call runViewModelTest and then use
+            // runTest's own API (advanceUntilIdle, runCurrent) on the scope it hands them.
+            api(libs.kotlinx.coroutines.test)
+        }
+        androidMain.dependencies {
+            // MainDispatcherRule extends JUnit's TestWatcher and takes a TestDispatcher in its
+            // public constructor, so the Android-only suites that still use it need both.
+            api(libs.junit)
+        }
+    }
 }
 
 android {
@@ -17,19 +48,4 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-    }
-}
-
-dependencies {
-    // api, not implementation: MainDispatcherRule extends JUnit's TestWatcher and takes a
-    // kotlinx-coroutines-test TestDispatcher in its public constructor, so consumers need both
-    // on their own compile classpath (same lesson as core:database/core:datastore's Room/
-    // multiplatform-settings dependencies).
-    api(libs.junit)
-    api(libs.kotlinx.coroutines.test)
 }

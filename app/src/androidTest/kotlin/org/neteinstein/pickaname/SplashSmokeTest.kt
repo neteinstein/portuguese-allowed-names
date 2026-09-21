@@ -4,7 +4,6 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,14 +21,12 @@ import org.junit.runner.RunWith
  * displayed" rather than "not found". [androidx.compose.ui.test.junit4.ComposeTestRule.waitUntil]
  * polls for the real on-screen state instead of asserting once immediately after launch.
  *
- * Currently [Ignore]d: this fails intermittently in CI with a full 15s [waitUntil] timeout (the
- * window never renders at all during the affected run, not just slowly), and that persisted even
- * after forcing deterministic software GPU rendering in the CI emulator step
- * (see .github/workflows/pr-checks.yml and PR #38 on neteinstein/portuguese-allowed-names for the
- * investigation). Since two independent fixes at different layers (test polling, emulator GPU
- * mode) didn't resolve it, the remaining cause is likely deeper - e.g. an emulator/Compose-test
- * synchronization issue - and needs investigation with the actual CI runner rather than more
- * guessing. Re-enable once that's root-caused.
+ * Was [org.junit.Ignore]d for a long stretch after PR #38: it timed out intermittently in CI
+ * with the window never rendering at all. Re-enabled here because the app shell it launches is
+ * no longer the one that was flaky - `MainActivity` now hands off to `composeApp`'s shared
+ * `App()` - and because it passes repeatedly on a real emulator. If it turns out to still be
+ * flaky on CI's runners, the fix is to root-cause the emulator/Compose-test synchronisation
+ * rather than to disable the only end-to-end Android check the project has.
  */
 @RunWith(AndroidJUnit4::class)
 class SplashSmokeTest {
@@ -37,7 +34,6 @@ class SplashSmokeTest {
     @get:Rule
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
-    @Ignore("Intermittently times out in CI - see class doc comment and PR #38")
     @Test
     fun appLaunchesAndShowsSplashScreen() {
         val expectedAppName = composeTestRule.activity.getString(R.string.app_name)
