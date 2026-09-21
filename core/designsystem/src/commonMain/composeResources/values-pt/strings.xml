@@ -90,7 +90,10 @@
     <string name="settings_names_list_description">Este site lê a lista oficial do IRN de nomes próprios aprovados, publicada juntamente com ele e atualizada automaticamente.</string>
     <string name="settings_names_list_updated">Carregada em: %1$s</string>
     <string name="settings_names_list_never_updated">Ainda não carregada</string>
-    <string name="settings_names_list_check_updates">Procurar atualizações</string>
+    <string name="settings_language_description_in_app">Escolha o idioma deste site. Segue o idioma do seu navegador, a menos que escolha outro.</string>
+    <string name="settings_language_label">Idioma</string>
+    <string name="settings_language_english">Inglês</string>
+    <string name="settings_language_portuguese">Português</string>
 
     <!-- Apenas na web: faixa "instale a aplicação Android" (ver InstallAppBanner) -->
     <string name="web_install_banner_title">Instale a aplicação Android</string>

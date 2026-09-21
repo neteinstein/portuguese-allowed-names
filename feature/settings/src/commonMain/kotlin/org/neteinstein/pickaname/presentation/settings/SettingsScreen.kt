@@ -56,6 +56,7 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
+import org.neteinstein.pickaname.domain.model.AppLanguage
 import org.neteinstein.pickaname.domain.model.RefreshPeriod
 import org.neteinstein.pickaname.domain.platform.PlatformCapabilities
 import org.neteinstein.pickaname.domain.model.SearchEngine
@@ -73,8 +74,11 @@ import org.neteinstein.pickaname.core.designsystem.resources.search_engine_duckd
 import org.neteinstein.pickaname.core.designsystem.resources.search_engine_google
 import org.neteinstein.pickaname.core.designsystem.resources.settings_language_button
 import org.neteinstein.pickaname.core.designsystem.resources.settings_language_description
+import org.neteinstein.pickaname.core.designsystem.resources.settings_language_description_in_app
+import org.neteinstein.pickaname.core.designsystem.resources.settings_language_english
+import org.neteinstein.pickaname.core.designsystem.resources.settings_language_label
+import org.neteinstein.pickaname.core.designsystem.resources.settings_language_portuguese
 import org.neteinstein.pickaname.core.designsystem.resources.settings_language_section
-import org.neteinstein.pickaname.core.designsystem.resources.settings_names_list_check_updates
 import org.neteinstein.pickaname.core.designsystem.resources.settings_names_list_description
 import org.neteinstein.pickaname.core.designsystem.resources.settings_names_list_never_updated
 import org.neteinstein.pickaname.core.designsystem.resources.settings_names_list_section
@@ -113,6 +117,7 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val openLanguageSettings = rememberAppLanguageSettingsLauncher()
+    val languageSelector = rememberAppLanguageSelector()
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -169,20 +174,36 @@ fun SettingsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Only where the platform actually has a per-app language screen to open (see
-                // rememberAppLanguageSettingsLauncher) - on web the browser owns the language.
-                openLanguageSettings?.let { openSettings ->
+                // Two shapes of the same setting: hand off to the OS screen where there is one
+                // (Android, iOS), pick in-app where there isn't (web).
+                if (openLanguageSettings != null) {
                     SettingsSectionCard(
                         icon = Icons.Filled.Language,
                         title = stringResource(Res.string.settings_language_section),
                         description = stringResource(Res.string.settings_language_description)
                     ) {
                         OutlinedButton(
-                            onClick = openSettings,
+                            onClick = openLanguageSettings,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(stringResource(Res.string.settings_language_button))
                         }
+                    }
+                } else if (languageSelector != null) {
+                    SettingsSectionCard(
+                        icon = Icons.Filled.Language,
+                        title = stringResource(Res.string.settings_language_section),
+                        // Not the Android copy above: there is no device setting to send a web
+                        // visitor to, and the language is per-site here.
+                        description = stringResource(Res.string.settings_language_description_in_app)
+                    ) {
+                        EnumDropdown(
+                            selected = languageSelector.current,
+                            options = AppLanguage.entries,
+                            label = stringResource(Res.string.settings_language_label),
+                            optionLabel = { stringResource(it.labelRes()) },
+                            onSelected = languageSelector::select
+                        )
                     }
                 }
 
@@ -217,12 +238,6 @@ fun SettingsScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Button(
-                            onClick = viewModel::onCheckForUpdates,
-                            modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
-                        ) {
-                            Text(stringResource(Res.string.settings_names_list_check_updates))
-                        }
                     }
                 }
 
@@ -393,6 +408,11 @@ private fun RefreshPeriod.labelRes(): StringResource = when (this) {
     RefreshPeriod.QUARTERLY -> Res.string.refresh_period_quarterly
     RefreshPeriod.BI_YEARLY -> Res.string.refresh_period_bi_yearly
     RefreshPeriod.YEARLY -> Res.string.refresh_period_yearly
+}
+
+private fun AppLanguage.labelRes(): StringResource = when (this) {
+    AppLanguage.ENGLISH -> Res.string.settings_language_english
+    AppLanguage.PORTUGUESE -> Res.string.settings_language_portuguese
 }
 
 private fun SearchEngine.labelRes(): StringResource = when (this) {

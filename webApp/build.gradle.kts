@@ -19,6 +19,8 @@ kotlin {
     sourceSets {
         wasmJsMain.dependencies {
             implementation(project(":composeApp"))
+            // applyStoredAppLanguage(), which has to run before the first composition.
+            implementation(project(":feature:settings"))
             implementation(compose.runtime)
             implementation(compose.ui)
             implementation(compose.components.resources)

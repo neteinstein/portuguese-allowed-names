@@ -56,6 +56,12 @@ kotlin {
                 implementation(libs.kotlinx.browser)
             }
         }
+        commonTest.dependencies {
+            implementation(project(":core:testing"))
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.turbine)
+        }
         val androidUnitTest by getting {
             dependencies {
                 implementation(project(":core:testing"))

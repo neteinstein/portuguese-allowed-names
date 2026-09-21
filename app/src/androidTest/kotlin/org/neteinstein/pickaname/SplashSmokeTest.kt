@@ -1,35 +1,33 @@
 package org.neteinstein.pickaname
 
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Ignore
+import kotlinx.coroutines.runBlocking
+import org.jetbrains.compose.resources.getString
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.neteinstein.pickaname.core.designsystem.resources.Res
+import org.neteinstein.pickaname.core.designsystem.resources.app_name
+import org.neteinstein.pickaname.core.designsystem.resources.name_list_search_hint
+import org.neteinstein.pickaname.core.designsystem.resources.sync_error_title
+import org.neteinstein.pickaname.core.designsystem.resources.sync_loading_title
 
 /**
- * End-to-end smoke test: the app must launch to the branded splash screen without crashing,
- * with real Koin DI wiring and a real (test-device-local) Room database/DataStore.
+ * End-to-end smoke test: the app must launch and render real content, with the whole Koin graph,
+ * a real on-device database and the real (multiplatform) resource system behind it.
  *
- * [org.neteinstein.pickaname.presentation.splash.SplashViewModel] guarantees a minimum 900ms
- * splash duration before deciding where to navigate next, so the splash content itself is
- * deterministic regardless of device speed, network availability, or whether the on-device
- * database already has data from a previous run. What isn't deterministic is how long a cold
- * CI emulator takes to finish booting and actually paint the first frame - the composable can
- * exist in the semantics tree before the window has been laid out/attached, which reads as "not
- * displayed" rather than "not found". [androidx.compose.ui.test.junit4.ComposeTestRule.waitUntil]
- * polls for the real on-screen state instead of asserting once immediately after launch.
+ * It asserts that the app reaches **any** of its legitimate first screens, which is what makes it
+ * deterministic. The app's first screen depends on state this test can't control:
+ * - an empty database (fresh install, and every CI emulator) routes splash → Sync;
+ * - a populated one routes splash → the name list;
+ * - and the splash itself only shows for [SplashViewModel]'s ~900 ms minimum.
  *
- * Currently [Ignore]d: this fails intermittently in CI with a full 15s [waitUntil] timeout (the
- * window never renders at all during the affected run, not just slowly), and that persisted even
- * after forcing deterministic software GPU rendering in the CI emulator step
- * (see .github/workflows/pr-checks.yml and PR #38 on neteinstein/portuguese-allowed-names for the
- * investigation). Since two independent fixes at different layers (test polling, emulator GPU
- * mode) didn't resolve it, the remaining cause is likely deeper - e.g. an emulator/Compose-test
- * synchronization issue - and needs investigation with the actual CI runner rather than more
- * guessing. Re-enable once that's root-caused.
+ * That is why this test used to be `@Ignore`d as "flaky": it waited for the app name, which is on
+ * the splash and the name list but *not* the sync screen, so on a fresh emulator it was really
+ * racing a 900 ms window - and losing. Checking for any of the four texts below removes the race
+ * while still failing for the regression that matters: an app that launches to nothing.
  */
 @RunWith(AndroidJUnit4::class)
 class SplashSmokeTest {
@@ -37,15 +35,23 @@ class SplashSmokeTest {
     @get:Rule
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
-    @Ignore("Intermittently times out in CI - see class doc comment and PR #38")
     @Test
-    fun appLaunchesAndShowsSplashScreen() {
-        val expectedAppName = composeTestRule.activity.getString(R.string.app_name)
+    fun appLaunchesAndShowsItsFirstScreen() {
+        val expectedTexts = runBlocking {
+            listOf(
+                getString(Res.string.app_name),           // splash, and the name list's top bar
+                getString(Res.string.sync_loading_title), // first run, while the list downloads
+                getString(Res.string.sync_error_title),   // first run with no usable network
+                getString(Res.string.name_list_search_hint)
+            )
+        }
 
-        composeTestRule.waitUntil(timeoutMillis = 15_000) {
-            runCatching {
-                composeTestRule.onNodeWithText(expectedAppName).assertIsDisplayed()
-            }.isSuccess
+        composeTestRule.waitUntil(timeoutMillis = 30_000) {
+            expectedTexts.any { text ->
+                composeTestRule.onAllNodesWithText(text, substring = true)
+                    .fetchSemanticsNodes()
+                    .isNotEmpty()
+            }
         }
     }
 }

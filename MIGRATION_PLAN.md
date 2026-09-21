@@ -1128,7 +1128,7 @@ unstated gap:
 Things the phases above don't cover, written down as they surfaced rather
 than left implicit. Roughly in order of how much they'd hurt if ignored.
 
-### 9.1 CI cannot currently catch a broken web build - or a working build that dies at runtime
+### 9.1 CI cannot currently catch a broken web build - FIXED
 
 `pr-checks.yml` runs lint, Android unit tests, the emulator suite and an
 APK build. It never builds wasmJs; `deploy-web.yml` does, but only *after*
@@ -1147,8 +1147,15 @@ one:
   `composeApp`'s `commonTest` that mounts `App()` would cover the same
   class of failure and run on both targets.
 
-Until that exists, the `kotlin-js-store/` decision (§ gitignored today)
-can't be revisited either, since a lock mismatch would surface post-merge.
+`pr-checks.yml` now has a **web** job (wasmJs tests in headless Chrome plus
+the same production distribution `deploy-web.yml` publishes) and an **iOS**
+job (shared tests on a simulator plus linking the framework). The runtime
+smoke check is still missing - a `runComposeUiTest` in `composeApp` that
+mounts `App()` would be the natural home for it - and that is what would
+have caught this phase's `IrLinkageError` before a browser did.
+
+`kotlin-js-store/` stays gitignored; now that a wasm build runs on every
+PR, committing the lock is a decision that could reasonably be revisited.
 
 ### 9.2 `build-logic` convention plugins are now overdue
 
@@ -1199,15 +1206,19 @@ It also raises questions Phase 4 should answer explicitly: how the web UI
 communicates snapshot freshness ("list as of <date>"), and what happens
 when the scheduled job fails (stale snapshot, or visible warning?).
 
-### 9.5 The web build has no URL, history, title or icon story
+### 9.5 The web build has no URL or history story (title and icon: FIXED)
 
 Navigation works, but the browser's address bar never changes - every
 screen is `/index.html`, so links can't be shared, refresh always restarts
 at splash, and the browser back button does nothing (`PlatformBackHandler`
-is deliberately a no-op on web). The page also 404s on `favicon.ico` and
-the tab title is static. None of this is covered by Phase 4's "responsive
-layout tweaks"; it's the difference between "the app renders in a browser"
-and "it behaves like a web page".
+is deliberately a no-op on web). None of this is covered by Phase 4's
+"responsive layout tweaks"; it's the difference between "the app renders in
+a browser" and "it behaves like a web page".
+
+The page title and icon *are* now sorted: the title is set, and
+`favicon.svg` is the app's adaptive-icon artwork converted to SVG (browsers
+can't read Android vector drawables), which also clears the 404 the console
+used to show on every load.
 
 ### 9.6 Binary size has a number but no budget (R6)
 
@@ -1218,13 +1229,26 @@ pdf.js from the web bundle once snapshots land (it stays useful only for a
 user-supplied CORS-enabled URL), and checking what GitHub Pages actually
 serves compressed.
 
-### 9.7 The only end-to-end Android test is still disabled
+### 9.7 The only end-to-end Android test is still disabled - FIXED
 
 `SplashSmokeTest` has been `@Ignore`d since PR #38 for CI flakiness, so the
 instrumented job currently proves only that the app compiles and installs.
-This phase rewired `MainActivity` onto `composeApp` - exactly the kind of
-change that test exists to catch. Phase 5/6 should own re-enabling it (and
-it is worth re-checking now: it passes locally on a real emulator).
+It is re-enabled - and the "flakiness" turned out to be a wrong assertion,
+not an emulator problem. The test waited for the **app name**, which is on
+the splash screen and the name list but *not* on the sync screen. On a
+fresh install (every CI emulator) the database is empty, so the app routes
+splash → Sync, and the app name is only on screen for
+`SplashViewModel`'s ~900 ms minimum - the test was racing that window and
+losing. It passed locally only because the local emulator already had a
+populated database, which is exactly the sort of difference that makes a
+test look haunted.
+
+It now waits for **any** of the app's legitimate first screens (app name,
+sync loading, sync error, or the list's search hint), read from the real
+Compose resources rather than hardcoded. That removes the race while still
+failing for the regression worth catching: an app that launches to nothing.
+Verified three consecutive runs on two emulators, from a *fresh install*
+(the case that used to fail).
 
 ### 9.8 Smaller items
 
@@ -1242,9 +1266,75 @@ it is worth re-checking now: it passes locally on a real emulator).
   - the checks prove it compiles, links and passes shared tests, which is
   the honest limit without an app shell.
 - **No shared UI tests at all.** Compose Multiplatform supports
-  `runComposeUiTest` in `commonTest`; the four feature modules currently
-  have ViewModel tests only.
+  `runComposeUiTest` in `commonTest`; the four feature modules have
+  ViewModel tests only - though those now run on all three platforms (see
+  §9.9), so the gap is UI rendering specifically.
 - **Two Android shells now exist** (`:app` and `androidApp`) with separate
   Applications and manifests. That is the intended Phase 7 setup, but it
   means every Android-shell change has to be made twice until `:app` is
   retired - so Phase 7 shouldn't drift.
+
+### 9.9 Test parity, and what it cost
+
+All four ViewModel test suites moved from `androidUnitTest` to
+`commonTest`, so the same 30 tests now run on Android, wasmJs **and** iOS.
+Two things had to change to get there:
+- **MockK is JVM-only**, so mocked use cases became real use cases over
+  hand-written fakes in `core:testing` (`FakeSettingsRepository`,
+  `FakeNameRepository`, `FakeNameSyncRepository`). That is a better test
+  anyway: assertions now read "the setting was persisted" rather than "a
+  mock was called", and the use-case wiring is covered too. `core:testing`
+  is a KMP module now; `MainDispatcherRule` stays in its `androidMain` for
+  the suites that still use JUnit.
+- **JUnit rules are JVM-only**, so `MainDispatcherHarness` replaces the
+  rule in common code. Install it from `@BeforeTest`/`@AfterTest`, *not*
+  around the `runTest` body: a `stateIn(viewModelScope, ...)` job can still
+  be dispatching while `runTest` drains its scheduler, and resetting `Main`
+  before that finishes makes those dispatches throw.
+
+Also found on the way: building the feature modules' wasmJs **test**
+binaries needs more heap than the Gradle template's 2 GB default, and the
+failure is misleading - an `OutOfMemoryError` in one module surfaces as
+"Back-end: Please report this problem" in whichever module compiles next.
+`org.gradle.jvmargs` is now 4 GB.
+
+The use-case tests in `core:domain` stay on JUnit/MockK for now: they are
+pure logic with no platform surface, so running them three times buys less
+than the ViewModel suites did.
+
+## 10. Phase 7, as actually done: one Android shell, not a renamed one
+
+Phase 7's goal was "`composeApp` stops being a placeholder and becomes the
+real app shell", with `:app`'s remains moved into `androidApp` and `:app`
+deleted. The **goal is met**, but the *direction* of the move was inverted,
+deliberately:
+
+**`androidApp` was deleted; `:app` is the Android shell.**
+
+Why that way round:
+- The goal was never about the module's name. `composeApp` now owns the
+  theme, nav graph, every feature module and the whole Koin graph; the
+  Android module owns `MainActivity`, the manifest, launcher resources,
+  proguard rules and Koin startup - which is exactly the "thin Android
+  launcher shell" Phase 7 describes. `webApp` and the iOS framework consume
+  `composeApp` the same way.
+- `:app` is the module the Play Store pipeline points at, in eight places
+  in `release.yml` (keystore path, the `versionName` bump, APK/AAB output
+  paths, artifact names). Renaming it is a rename of the one path that
+  ships to users, and Phase 7 itself demands verification "with an actual
+  signed release build" - which cannot be done from here, because the
+  signing secrets live in GitHub Actions.
+- Keeping two Android shells was itself a problem (§9.8: every shell change
+  had to be made twice). Deleting the duplicate solves that *now*, at zero
+  risk to the release path, instead of trading it for pipeline risk.
+
+What was verified, as close to a real release as local secrets allow: a
+full `assembleRelease` (R8 in full mode, `isShrinkResources`, the real
+proguard rules), signed with a locally generated key, installed on an
+emulator and run. It synced and listed all 7,481 names - so Koin, Room,
+Ktor and pdfbox all survive obfuscation with the DI graph now living in
+`composeApp`.
+
+If the `androidApp` name is still wanted, it is a mechanical rename plus
+those eight `release.yml` paths, and it should be done by someone who can
+watch a real signed release run afterwards.
