@@ -1311,10 +1311,15 @@ Verified three consecutive runs on two emulators, from a *fresh install*
 
 ### 9.8 Smaller items
 
-- **`material-icons-extended` is pinned at 1.7.3**, the last multiplatform
-  release JetBrains published. It works (icons are just `ImageVector`s) but
-  it is a dead coordinate; a maintained icon source will be needed
-  eventually.
+- **`material-icons-extended` stays pinned at 1.7.3**, the last
+  multiplatform release JetBrains published - a deliberate decision, not an
+  oversight. The artifact contains nothing but `ImageVector` declarations,
+  it is pinned so it cannot change under us, and on Android it resolves to
+  the maintained androidx artifact anyway. Replacing it means vendoring the
+  ~12 icons the app uses that aren't in `material-icons-core`, which is
+  worth doing when something actually breaks - a Compose Multiplatform
+  upgrade that its `ImageVector` API no longer matches - rather than
+  pre-emptively.
 - **iOS now has an app, and it runs.** `iosApp/` is a SwiftUI shell (an
   Xcode project, hand-written since no generator is available here) that
   hosts `MainViewController()`, with a build phase that builds the shared
@@ -1354,9 +1359,10 @@ failure is misleading - an `OutOfMemoryError` in one module surfaces as
 "Back-end: Please report this problem" in whichever module compiles next.
 `org.gradle.jvmargs` is now 4 GB.
 
-The use-case tests in `core:domain` stay on JUnit/MockK for now: they are
-pure logic with no platform surface, so running them three times buys less
-than the ViewModel suites did.
+The `core:domain` use-case tests followed the same route afterwards: 19
+tests, now running on all three platforms, rewritten around the same fakes.
+That also let `core:domain` drop MockK, Truth and JUnit entirely - it has
+no `androidUnitTest` source set left at all.
 
 ## 10. Phase 7: one Android shell, named `androidApp`
 
