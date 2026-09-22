@@ -1,4 +1,7 @@
 pluginManagement {
+    // The convention plugins that every module applies (see build-logic/convention).
+    includeBuild("build-logic")
+
     repositories {
         google()
         mavenCentral()

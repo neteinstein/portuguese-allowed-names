@@ -99,6 +99,13 @@ jetbrains-navigation-compose = { module = "org.jetbrains.androidx.navigation:nav
 koin-compose = { module = "io.insert-koin:koin-compose" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel" }
 
+# Plugin artifacts, so the convention plugins in build-logic can configure the plugins they
+# apply. Same versions as the [plugins] aliases below - the catalog keeps them in step.
+android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+compose-gradlePlugin = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "compose-multiplatform" }
+compose-compiler-gradlePlugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }

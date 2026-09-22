@@ -1170,16 +1170,33 @@ than surfacing after merge. It pins the JS toolchain (karma, webpack,
 everywhere. If a dependency bump makes it mismatch, the fix is
 `./gradlew kotlinWasmUpgradeYarnLock` and committing the result.
 
-### 9.2 `build-logic` convention plugins are now overdue
+### 9.2 `build-logic` convention plugins - DONE
 
 Phase 0 deferred them with an explicit trigger: "once Phase 2's feature
 modules make the per-module boilerplate repeat enough to be worth
-abstracting". That threshold has passed - there are 15 modules, and the
-KMP ones' `build.gradle.kts` files are near-identical (same two targets,
-same `jvmTarget`, same `compileSdk`/`minSdk`, same Compose set). Three of
-them in this phase were written by copying another module's file. The next
-structural change (a new target, an AGP bump, a compileSdk bump) has to be
-made 15 times by hand.
+abstracting". That threshold passed long ago - by the end there were 15
+near-identical files, three of them written by copying another module's,
+and adding the iOS targets meant fifteen identical edits.
+
+`build-logic/convention` now holds two plugins:
+- **`pickaname.kmp.library`** - the targets (android, wasmJs, both iOS
+  ones), the JVM level, `compileSdk`/`minSdk`, and the karma browser setup.
+  The Android `namespace` is derived from the module path (`:core:model` →
+  `org.neteinstein.pickaname.core.model`), which is what every module
+  already did by hand; a module needing something else just sets its own,
+  and wins because its build script runs after the plugin.
+- **`pickaname.kmp.compose`** - the above plus Compose Multiplatform, so
+  the data-layer modules don't carry plugins they never use.
+
+The result: **464 lines deleted, 27 added** across the 15 module files.
+What stays per-module is what genuinely differs - dependencies, extra
+targets (`core:model`/`core:parser`'s `jvm()`), `core:database`'s KSP, and
+`composeApp`'s framework binary and namespace override.
+
+Verified across everything the plugins touch: `assembleDebug`,
+`testDebugUnitTest`, `lintDebug`, `wasmJsTest`, `iosSimulatorArm64Test`,
+the iOS framework link, `checkModuleBoundaries`, the web distribution, and
+the instrumented tests on two emulators.
 
 ### 9.3 The settings-store swap silently dropped existing users' preferences — FIXED
 
