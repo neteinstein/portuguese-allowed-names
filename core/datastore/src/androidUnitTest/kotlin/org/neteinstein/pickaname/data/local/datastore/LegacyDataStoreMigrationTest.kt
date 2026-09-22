@@ -6,10 +6,6 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.google.common.truth.Truth.assertThat
 import com.russhwolf.settings.MapSettings
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -101,23 +97,32 @@ class LegacyDataStoreMigrationTest {
         assertThat(settings.keys).isEmpty()
     }
 
+    /**
+     * Writes a real DataStore file and hands back a **copy** of it.
+     *
+     * DataStore refuses to have two instances open on one file for the life of a process, and
+     * the registration it keeps is only released asynchronously when the writer's scope is
+     * cancelled - so handing the migration the very file this wrote is a race. It passed
+     * locally every time and failed on CI, which is the tell. Copying the bytes sidesteps the
+     * registry entirely while still testing against a file DataStore really wrote.
+     */
     private suspend fun writeLegacyPreferences(
         sourceUrl: String? = null,
         refreshPeriod: String? = null,
         searchEngine: String? = null,
         lastRefresh: Long? = null
     ): File {
-        val file = File(temporaryFolder.root, "legacy-${System.nanoTime()}.preferences_pb")
-        // DataStore refuses to have two instances open on one file for the life of a process, so
-        // this writer gets its own scope and is shut down before the migration opens its own.
-        val writerScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        PreferenceDataStoreFactory.create(scope = writerScope, produceFile = { file }).edit { preferences ->
+        val unique = System.nanoTime()
+        val written = File(temporaryFolder.root, "written-$unique.preferences_pb")
+        PreferenceDataStoreFactory.create(produceFile = { written }).edit { preferences ->
             sourceUrl?.let { preferences[stringPreferencesKey(SettingsKeys.SOURCE_URL)] = it }
             refreshPeriod?.let { preferences[stringPreferencesKey(SettingsKeys.REFRESH_PERIOD)] = it }
             searchEngine?.let { preferences[stringPreferencesKey(SettingsKeys.SEARCH_ENGINE)] = it }
             lastRefresh?.let { preferences[longPreferencesKey(SettingsKeys.LAST_REFRESH_TIMESTAMP)] = it }
         }
-        writerScope.cancel()
-        return file
+
+        val legacyFile = File(temporaryFolder.root, "legacy-$unique.preferences_pb")
+        written.copyTo(legacyFile)
+        return legacyFile
     }
 }

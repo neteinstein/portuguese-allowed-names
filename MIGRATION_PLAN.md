@@ -1302,39 +1302,47 @@ The use-case tests in `core:domain` stay on JUnit/MockK for now: they are
 pure logic with no platform surface, so running them three times buys less
 than the ViewModel suites did.
 
-## 10. Phase 7, as actually done: one Android shell, not a renamed one
+## 10. Phase 7: one Android shell, named `androidApp`
 
-Phase 7's goal was "`composeApp` stops being a placeholder and becomes the
-real app shell", with `:app`'s remains moved into `androidApp` and `:app`
-deleted. The **goal is met**, but the *direction* of the move was inverted,
-deliberately:
+Phase 7 landed in two steps, deliberately kept apart because only the second
+one touches the path that ships to users.
 
-**`androidApp` was deleted; `:app` is the Android shell.**
+**Step 1 - one shell.** `composeApp` became the real shared app (theme, nav
+graph, every feature module, the whole Koin graph), leaving a single thin
+Android module holding `MainActivity`, the manifest, launcher resources,
+proguard rules and Koin startup. The duplicate placeholder shell was
+deleted, which ended the "every shell change has to be made twice" problem
+(§9.8). At that point the surviving module was still called `:app`, because
+renaming it means editing the release pipeline, and that deserved its own
+reviewable change rather than riding along.
 
-Why that way round:
-- The goal was never about the module's name. `composeApp` now owns the
-  theme, nav graph, every feature module and the whole Koin graph; the
-  Android module owns `MainActivity`, the manifest, launcher resources,
-  proguard rules and Koin startup - which is exactly the "thin Android
-  launcher shell" Phase 7 describes. `webApp` and the iOS framework consume
-  `composeApp` the same way.
-- `:app` is the module the Play Store pipeline points at, in eight places
-  in `release.yml` (keystore path, the `versionName` bump, APK/AAB output
-  paths, artifact names). Renaming it is a rename of the one path that
-  ships to users, and Phase 7 itself demands verification "with an actual
-  signed release build" - which cannot be done from here, because the
-  signing secrets live in GitHub Actions.
-- Keeping two Android shells was itself a problem (§9.8: every shell change
-  had to be made twice). Deleting the duplicate solves that *now*, at zero
-  risk to the release path, instead of trading it for pipeline risk.
+**Step 2 - the rename.** `:app` is now `androidApp`, matching §3's target
+layout (`androidApp` / `webApp` / the iOS framework, all consuming
+`composeApp`). What had to move with it:
+- `settings.gradle.kts`, and the proguard file's own comment;
+- **`release.yml`**, in every place it hardcodes the module: the keystore
+  decode target, the two `-Pandroid.injected.signing.store.file` paths, the
+  `versionName` read/bump/`git add`, the test-results upload, the
+  `apksigner verify` path, the GitHub-release upload paths and the two Play
+  Store `releaseFiles` entries;
+- **the artifact names themselves.** AGP derives them from the module
+  directory, so `app-release.apk`/`.aab` are now
+  `androidApp-release.apk`/`.aab` - confirmed by building them, not by
+  assuming. The names users see are unaffected: the workflow already
+  renames uploads to `AllowedPortugueseNames_v<version>.apk`.
+- `pr-checks.yml`'s lint/test/APK artifact paths, plus the README and the
+  agent guides that point contributors at the module.
 
-What was verified, as close to a real release as local secrets allow: a
-full `assembleRelease` (R8 in full mode, `isShrinkResources`, the real
-proguard rules), signed with a locally generated key, installed on an
-emulator and run. It synced and listed all 7,481 names - so Koin, Room,
-Ktor and pdfbox all survive obfuscation with the DI graph now living in
-`composeApp`.
+Verified the same way the pre-rename shell was, since this is the release
+path: a full `assembleRelease` **and** `bundleRelease` (R8 in full mode,
+`isShrinkResources`, the real proguard rules), the APK signed with a
+locally generated key, installed on an emulator and run - it listed all
+7,481 names, so Koin, Room, Ktor and pdfbox still survive obfuscation. The
+instrumented smoke test passes on two emulators against `:androidApp`.
 
-If the `androidApp` name is still wanted, it is a mechanical rename plus
-those eight `release.yml` paths, and it should be done by someone who can
-watch a real signed release run afterwards.
+What still cannot be verified from here: a build signed with the **real**
+upload key, and the Play Store upload itself, because those secrets live in
+GitHub Actions. The first `release.yml` run after this merges is the thing
+to watch - specifically that the keystore lands at `androidApp/` and that
+both `androidApp-release.apk` and `androidApp-release.aab` are found where
+the workflow now looks for them.

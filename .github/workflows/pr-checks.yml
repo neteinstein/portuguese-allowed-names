@@ -46,21 +46,21 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: lint-results
-          path: app/build/reports/lint-results-debug.html
+          path: androidApp/build/reports/lint-results-debug.html
           
       - name: Upload unit test results
         if: always() && matrix.name == 'Unit Tests'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: unit-test-results
-          path: app/build/test-results/testDebugUnitTest/
+          path: androidApp/build/test-results/testDebugUnitTest/
           
       - name: Upload unit test reports
         if: always() && matrix.name == 'Unit Tests'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: unit-test-reports
-          path: app/build/reports/tests/testDebugUnitTest/
+          path: androidApp/build/reports/tests/testDebugUnitTest/
   
   instrumented-tests:
     name: Android - Instrumented Tests
@@ -114,14 +114,14 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: instrumented-test-results
-          path: app/build/outputs/androidTest-results/
+          path: androidApp/build/outputs/androidTest-results/
           
       - name: Upload instrumented test reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: instrumented-test-reports
-          path: app/build/reports/androidTests/
+          path: androidApp/build/reports/androidTests/
   
   # The web and iOS targets get their own jobs rather than riding along with the Android matrix:
   # they need different runners (Chrome for wasmJs, macOS/Xcode for Kotlin/Native), and a broken
@@ -228,4 +228,4 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: androidApp/build/outputs/apk/debug/*.apk

@@ -1,5 +1,5 @@
 # R8 rules for the release build (minification, obfuscation and resource shrinking are all
-# enabled in app/build.gradle.kts).
+# enabled in androidApp/build.gradle.kts).
 #
 # Deliberately short: every third-party library this app uses ships its own consumer rules
 # inside its AAR/JAR (Room keeps `* extends RoomDatabase`, pdfbox-android keeps the
