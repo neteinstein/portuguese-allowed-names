@@ -1315,15 +1315,12 @@ Verified three consecutive runs on two emulators, from a *fresh install*
   release JetBrains published. It works (icons are just `ImageVector`s) but
   it is a dead coordinate; a maintained icon source will be needed
   eventually.
-- **iOS** is no longer an aside: every KMP module now has `iosArm64` +
-  `iosSimulatorArm64` targets with real actuals (PDFKit for text
-  extraction, `NSUserDefaults` for both stores, Foundation's diacritic
-  folding, `UIApplication` for opening URLs and the per-app language
-  screen), `composeApp` exposes a `MainViewController()` entry point, and
-  CI links the framework and runs the shared tests on a simulator. What
-  does **not** exist is an Xcode project, so nothing has been *run* on iOS
-  - the checks prove it compiles, links and passes shared tests, which is
-  the honest limit without an app shell.
+- **iOS now has an app, and it runs.** `iosApp/` is a SwiftUI shell (an
+  Xcode project, hand-written since no generator is available here) that
+  hosts `MainViewController()`, with a build phase that builds the shared
+  framework through Gradle. Installed on a simulator it lists all 7,481
+  names, same as Android and web. See §11 for what running it - rather
+  than just linking it - immediately caught.
 - **No shared UI tests at all.** Compose Multiplatform supports
   `runComposeUiTest` in `commonTest`; the four feature modules have
   ViewModel tests only - though those now run on all three platforms (see
@@ -1405,3 +1402,38 @@ GitHub Actions. The first `release.yml` run after this merges is the thing
 to watch - specifically that the keystore lands at `androidApp/` and that
 both `androidApp-release.apk` and `androidApp-release.aab` are found where
 the workflow now looks for them.
+
+## 11. What running the iOS app caught that linking never would
+
+The iOS target compiled, linked and passed its shared tests for several
+commits before there was an app to run. The first launch found two defects
+that none of that could have:
+
+**1. A missing Info.plist key aborts the process.** Compose Multiplatform's
+own `PlistSanityCheck` calls `error()` when `CADisableMinimumFrameDurationOnPhone`
+is absent, so the app died on launch with SIGABRT. Nothing in the Kotlin
+code is wrong; the shell just has to declare it.
+
+**2. PDFKit's text APIs are not dependable in an app process - it parsed
+488 names instead of 7,481.** Worth recording in detail, because the
+symptom was so misleading:
+
+- The app downloaded the full 2,905,263 bytes and extracted text with the
+  *same character count and line count* as a test run of the same code -
+  but arranged one fragment per line ("Abd", "Abdel", "Masculinos") rather
+  than as the rows the document actually shows.
+- `PDFDocument.string`, `PDFPage.string` and `selectionsByLine()` all
+  behaved this way inside the app, while all three returned proper rows in
+  a test process on the same simulator. The parser was blameless: fed the
+  test's text it produced 7,481 names; fed the app's, 488 - which happened
+  to be the alphabetical tail, so the app looked plausibly populated.
+- The fix is to stop asking PDFKit to lay text out at all:
+  `PdfTextExtractor` now takes the fragments and their bounds and rebuilds
+  rows by baseline, exactly as the web extractor does with pdf.js. Those
+  are facts PDFKit reports consistently.
+
+The lesson generalises past iOS: "it compiles and links" is not evidence
+that a platform works, and a difference between a test harness and a real
+app is not a reason to trust the test. The iOS extractor now has its own
+fixture test (`core:parser`'s `iosTest`), sharing one fixture with the web
+one so both engines are held to the same expected rows.

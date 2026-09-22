@@ -26,6 +26,10 @@ kotlin {
                 implementation(libs.kotlinx.browser)
             }
         }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+        }
         val androidUnitTest by getting {
             dependencies {
                 implementation(libs.junit)

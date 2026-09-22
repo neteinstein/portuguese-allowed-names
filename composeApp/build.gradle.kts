@@ -67,6 +67,10 @@ kotlin {
                 implementation(compose.uiTest)
             }
         }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)
+        }
         iosMain.dependencies {
             // Ktor's Apple engine (NSURLSession) - the iOS half of platformModule().
             implementation(libs.ktor.client.darwin)
