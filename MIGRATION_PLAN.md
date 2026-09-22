@@ -1274,6 +1274,23 @@ Verified three consecutive runs on two emulators, from a *fresh install*
   means every Android-shell change has to be made twice until `:app` is
   retired - so Phase 7 shouldn't drift.
 
+### 9.10 The snapshot job would have updated the file without redeploying
+
+Found while reviewing what was left: `update-names-snapshot.yml` committed
+with `[skip ci]`, copied from the version-bump commit in `release.yml`
+where that tag is correct. Here it defeats the job's own purpose - the
+snapshot lands in the repo and `deploy-web.yml`, which is triggered by
+exactly that push to `main`, never runs, so the site keeps serving the old
+list until some unrelated push happens.
+
+Removed. Nothing else is triggered by a push to `main` (`release.yml` runs
+on a closed pull request), so this does not start a release.
+
+Still untested: the workflow has never actually run - it is scheduled
+weekly and has not reached its first Monday. Worth dispatching once
+manually to confirm the commit-and-push step works with the token it has,
+rather than discovering it on a weekend.
+
 ### 9.9 Test parity, and what it cost
 
 All four ViewModel test suites moved from `androidUnitTest` to
