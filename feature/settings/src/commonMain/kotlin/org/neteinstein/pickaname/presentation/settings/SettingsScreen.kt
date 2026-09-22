@@ -60,6 +60,7 @@ import org.neteinstein.pickaname.domain.model.AppLanguage
 import org.neteinstein.pickaname.domain.model.RefreshPeriod
 import org.neteinstein.pickaname.domain.platform.PlatformCapabilities
 import org.neteinstein.pickaname.domain.model.SearchEngine
+import org.neteinstein.pickaname.presentation.common.arrowKeyScroll
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.neteinstein.pickaname.core.designsystem.resources.Res
@@ -166,11 +167,14 @@ fun SettingsScreen(
                 animationSpec = tween(350)
             )
         ) {
+            val scrollState = rememberScrollState()
+
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(paddingValues)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
+                    .arrowKeyScroll(scrollState)
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
