@@ -1219,14 +1219,22 @@ It also raises questions Phase 4 should answer explicitly: how the web UI
 communicates snapshot freshness ("list as of <date>"), and what happens
 when the scheduled job fails (stale snapshot, or visible warning?).
 
-### 9.5 The web build has no URL or history story (title and icon: FIXED)
+### 9.5 The web build has no URL or history story - FIXED
 
-Navigation works, but the browser's address bar never changes - every
-screen is `/index.html`, so links can't be shared, refresh always restarts
-at splash, and the browser back button does nothing (`PlatformBackHandler`
-is deliberately a no-op on web). None of this is covered by Phase 4's
-"responsive layout tweaks"; it's the difference between "the app renders in
-a browser" and "it behaves like a web page".
+`SyncNavigationWithPlatformHistory` (web actual) now keeps the graph and
+the browser in step both ways: every destination change writes a hash URL
+(`#/name_list`, `#/settings`), and `popstate` - Back and Forward - navigates
+the graph instead of leaving the site. `platformStartRoute()` lets a shared
+link or a reload open straight on a screen.
+
+Hash URLs rather than real paths on purpose: this ships to GitHub Pages,
+which serves static files, so `/settings` would 404 on reload while
+`#/settings` is always `index.html`. Splash and sync are deliberately not
+deep-linkable - they're transitions, not destinations.
+
+Verified in a browser, all four behaviours: the address bar tracks the
+screen, opening Settings updates it, Back returns to the list rather than
+leaving the site, and loading `#/settings` cold opens Settings.
 
 The page title and icon *are* now sorted: the title is set, and
 `favicon.svg` is the app's adaptive-icon artwork converted to SVG (browsers
