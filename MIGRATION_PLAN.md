@@ -1286,10 +1286,19 @@ list until some unrelated push happens.
 Removed. Nothing else is triggered by a push to `main` (`release.yml` runs
 on a closed pull request), so this does not start a release.
 
-Still untested: the workflow has never actually run - it is scheduled
-weekly and has not reached its first Monday. Worth dispatching once
-manually to confirm the commit-and-push step works with the token it has,
-rather than discovering it on a weekend.
+The schedule is **the 1st of each month, 05:00 UTC**. The list changes
+rarely - it hasn't changed at all across this workflow's runs so far - so
+the cadence is about the published snapshot not going quietly stale rather
+than about latency, and a run that finds no change commits nothing.
+`workflow_dispatch` covers the case where a change is known about.
+
+The chain the schedule depends on, end to end: the job regenerates the
+snapshot → commits it (no `[skip ci]`, see above) → that push to `main`
+triggers `deploy-web.yml` → the site serves the new list. The workflow
+itself has been run by hand and works; the only step no run has exercised
+yet is the commit-and-push, simply because the source hasn't changed - and
+`main` has no branch protection, while `release.yml` already pushes to it
+with the same token.
 
 ### 9.9 Test parity, and what it cost
 
