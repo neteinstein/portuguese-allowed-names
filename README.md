@@ -1,21 +1,28 @@
 # Portugal's Approved Names (Nomes Permitidos em Portugal)
 
+[**Open the web app**](https://nomespermitidosemportugal.neteinstein.org/) &nbsp;·&nbsp;
+[**Get it on Google Play**](https://play.google.com/store/apps/details?id=org.neteinstein.pickaname)
+
 | Splash Screen | Name List | Filtered Name List | Settings |
 | :---: | :---: | :---: | :---: |
 | <img src="distribution/metadata/android/pt-PT/images/phoneScreenshots/1_splash.png" width="250" alt="Splash Screen" /> | <img src="distribution/metadata/android/pt-PT/images/phoneScreenshots/2_name_list.png" width="250" alt="Name List" /> | <img src="distribution/metadata/android/pt-PT/images/phoneScreenshots/3_name_list_filtered.png" width="250" alt="Filtered Name List" /> | <img src="distribution/metadata/android/pt-PT/images/phoneScreenshots/4_settings.png" width="250" alt="Settings" /> |
 
 *Screenshots show the Portuguese (pt-PT) UI, where the app is called "Nomes Permitidos em Portugal".*
 
-An Android app that lists the first names legally allowed for newborns in Portugal, based on
+An app that lists the first names legally allowed for newborns in Portugal, based on
 the official register published by the [Instituto dos Registos e do Notariado](https://irn.justica.gov.pt/en-gb/)
 (IRN). Browse the full list, search it, filter it by gender, initial letter, or a best-effort
 "traditional names" filter, pick a random name, look up a name's meaning, and follow links to
-the official IRN rules. Available in English and Portuguese.
+the official IRN rules. Available in English and Portuguese, on
+[Android](https://play.google.com/store/apps/details?id=org.neteinstein.pickaname) and in the
+[browser](https://nomespermitidosemportugal.neteinstein.org/).
 
-(PT) Uma app Android que lista os nomes próprios permitidos para recém-nascidos em Portugal,
+(PT) Uma app que lista os nomes próprios permitidos para recém-nascidos em Portugal,
 com base na lista oficial publicada pelo IRN. Permite consultar e pesquisar a lista completa,
 filtrar por género, letra inicial ou nomes tradicionais, sortear um nome, ver o significado de
-um nome e aceder às regras oficiais do IRN.
+um nome e aceder às regras oficiais do IRN. Disponível para
+[Android](https://play.google.com/store/apps/details?id=org.neteinstein.pickaname) e no
+[browser](https://nomespermitidosemportugal.neteinstein.org/).
 
 ## Where the data comes from
 
@@ -75,7 +82,9 @@ next.
 ```
 
 The web build is deployed to GitHub Pages by `.github/workflows/deploy-web.yml`, separately
-from the Android release pipeline (`release.yml`).
+from the Android release pipeline (`release.yml`). It is served at
+<https://nomespermitidosemportugal.neteinstein.org/>; the Android app is published at
+<https://play.google.com/store/apps/details?id=org.neteinstein.pickaname>.
 
 ## AI agent roles
 
