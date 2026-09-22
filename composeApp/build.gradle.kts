@@ -1,4 +1,8 @@
-@file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+@file:OptIn(
+    org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class,
+    // compose.uiTest, used by the browser smoke test below.
+    org.jetbrains.compose.ExperimentalComposeLibrary::class,
+)
 
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -16,7 +20,21 @@ kotlin {
         }
     }
     wasmJs {
-        browser()
+        browser {
+            testTask {
+                useKarma {
+                    useChromeHeadless()
+                    // A second engine for the runtime smoke test, because "it renders" is
+                    // exactly the claim that can differ between browsers - Kotlin/Wasm needs
+                    // WasmGC, and engines shipped it at different times. Only on CI: GitHub's
+                    // runners have Firefox preinstalled, a dev machine may not, and a missing
+                    // browser should not fail someone's local test run.
+                    if (System.getenv("CI") != null) {
+                        useFirefoxHeadless()
+                    }
+                }
+            }
+        }
     }
     // A real framework binary, not just compiled klibs: an iOS app shell imports this, and
     // linking is what proves every actual in the graph is actually there (see MIGRATION_PLAN.md
@@ -68,6 +86,13 @@ kotlin {
             // hence koin-android's androidContext()) and the CIO engine.
             implementation(libs.koin.android)
             implementation(libs.ktor.client.cio)
+        }
+        val wasmJsTest by getting {
+            dependencies {
+                // Composes the real App() in a real browser - see AppRuntimeSmokeTest.
+                implementation(kotlin("test"))
+                implementation(compose.uiTest)
+            }
         }
         iosMain.dependencies {
             // Ktor's Apple engine (NSURLSession) - the iOS half of platformModule().

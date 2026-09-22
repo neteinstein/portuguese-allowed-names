@@ -1149,10 +1149,19 @@ one:
 
 `pr-checks.yml` now has a **web** job (wasmJs tests in headless Chrome plus
 the same production distribution `deploy-web.yml` publishes) and an **iOS**
-job (shared tests on a simulator plus linking the framework). The runtime
-smoke check is still missing - a `runComposeUiTest` in `composeApp` that
-mounts `App()` would be the natural home for it - and that is what would
-have caught this phase's `IrLinkageError` before a browser did.
+job (shared tests on a simulator plus linking the framework).
+
+The runtime smoke check exists too: `composeApp`'s `AppRuntimeSmokeTest`
+composes the real `App()` - real Koin graph, real navigation, real
+resources - in a real browser and fails if nothing renders. That is the
+check that was missing when the Compose version skew shipped an app which
+compiled perfectly and died on load; no compile-time check can catch that
+class of bug. It was verified the only way such a test is worth anything:
+by deliberately breaking `App()` and confirming it goes red, then restoring
+it. On CI it runs in **Firefox as well as Chrome**, since "it renders" is
+precisely the claim that can differ between engines (Kotlin/Wasm needs
+WasmGC, which engines shipped at different times); locally it stays
+Chrome-only so a machine without Firefox isn't punished.
 
 `kotlin-js-store/wasm/yarn.lock` **is now committed**, which was always
 conditional on exactly this: a lock mismatch now fails a PR check rather
