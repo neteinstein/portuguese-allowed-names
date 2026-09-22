@@ -82,5 +82,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "$SNAPSHOT"
-          git commit -m "chore: update names snapshot [skip ci]"
+          # Deliberately *not* "[skip ci]", unlike the version-bump commit in release.yml: the
+          # whole point of a new snapshot is for the site to serve it, and deploy-web.yml is
+          # triggered by exactly this push to main. "[skip ci]" would suppress it, leaving the
+          # file updated in the repo and the deployed site still serving the old list. Nothing
+          # else runs on push to main (release.yml triggers on a closed pull request), so this
+          # does not start a release.
+          git commit -m "chore: update names snapshot"
           git push
