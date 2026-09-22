@@ -26,6 +26,8 @@ import kotlin.test.assertTrue
  * the ViewModel suites cover behaviour - because its job is to fail when the app cannot start at
  * all.
  */
+private val ANY_NODE = SemanticsMatcher("any node") { true }
+
 class AppRuntimeSmokeTest {
 
     @AfterTest
@@ -43,11 +45,17 @@ class AppRuntimeSmokeTest {
             App(logo = BitmapPainter(ImageBitmap(1, 1)))
         }
 
-        waitForIdle()
+        // Not waitForIdle(): the start destination shows an indeterminate progress indicator
+        // while it works, and an animation that never ends means the composition is never idle -
+        // so waiting for idle waits forever. Waiting for the nodes themselves asks the question
+        // this test actually cares about.
+        waitUntil(timeoutMillis = 10_000) {
+            onAllNodes(ANY_NODE).fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Any node at all: reaching this point means the whole graph composed - theme, nav host,
         // the start destination and its ViewModel - without throwing.
-        val rendered = onAllNodes(SemanticsMatcher("any node") { true }).fetchSemanticsNodes()
+        val rendered = onAllNodes(ANY_NODE).fetchSemanticsNodes()
         assertTrue(rendered.isNotEmpty(), "App() composed no nodes at all")
     }
 }
