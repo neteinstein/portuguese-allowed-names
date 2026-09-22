@@ -1154,8 +1154,12 @@ smoke check is still missing - a `runComposeUiTest` in `composeApp` that
 mounts `App()` would be the natural home for it - and that is what would
 have caught this phase's `IrLinkageError` before a browser did.
 
-`kotlin-js-store/` stays gitignored; now that a wasm build runs on every
-PR, committing the lock is a decision that could reasonably be revisited.
+`kotlin-js-store/wasm/yarn.lock` **is now committed**, which was always
+conditional on exactly this: a lock mismatch now fails a PR check rather
+than surfacing after merge. It pins the JS toolchain (karma, webpack,
+@js-joda) and `pdfjs-dist`, so a web build resolves the same packages
+everywhere. If a dependency bump makes it mismatch, the fix is
+`./gradlew kotlinWasmUpgradeYarnLock` and committing the result.
 
 ### 9.2 `build-logic` convention plugins are now overdue
 
@@ -1220,14 +1224,35 @@ The page title and icon *are* now sorted: the title is set, and
 can't read Android vector drawables), which also clears the 404 the console
 used to show on every load.
 
-### 9.6 Binary size has a number but no budget (R6)
+### 9.6 Binary size has a number but no budget (R6) - FIXED
 
-The production distribution is ~16 MB uncompressed (~8 MB of that is
-skiko.wasm, ~1.5 MB pdf.js). `deploy-web.yml` prints the size but nothing
-acts on it. Phase 4 should set a target and name the levers: dropping
-pdf.js from the web bundle once snapshots land (it stays useful only for a
-user-supplied CORS-enabled URL), and checking what GitHub Pages actually
-serves compressed.
+Measured properly rather than estimated, since what matters is what a
+visitor waits for: **4.7 MB gzipped** (13.7 MB raw), and GitHub Pages does
+serve gzip - confirmed against the live site's response headers. The split:
+
+| part | raw | gzipped |
+|---|---|---|
+| skiko.wasm (Compose's renderer) | 8.4 MB | 3.2 MB |
+| the app itself | 4.9 MB | 1.4 MB |
+| `pickaname.js` | 588 KB | 106 KB |
+| names snapshot | 68 KB | 24 KB |
+
+Two things worth correcting about the earlier estimate. **pdf.js is no
+longer in the bundle at all** - once the web build switched to the
+published snapshot, nothing on the web path calls `PdfTextExtractor`, so
+its dynamic `import()` is dropped and webpack emits no chunk for it. The
+dependency stays declared, costing only CI install time, so the capability
+is there if a user-supplied CORS-enabled URL is ever wired up. And the
+app's own wasm looks like it grew 5x versus an earlier note - it didn't;
+that measurement was taken when `composeApp` was still a placeholder with
+two `Text`s in it.
+
+`pr-checks.yml` now **enforces** a 5.6 MB gzipped budget (~15% headroom),
+and `deploy-web.yml` reports gzipped alongside raw. The budget exists to
+catch a regression - accidentally bundling something large again - not to
+police ordinary growth; raising it deliberately is a fine outcome, silently
+shipping 8 MB is not. The dominant cost, skiko, is fixed by Compose
+Multiplatform itself and is not something this project can shrink.
 
 ### 9.7 The only end-to-end Android test is still disabled - FIXED
 

@@ -45,7 +45,16 @@ jobs:
       - name: Report artifact size
         # Kotlin/Wasm + Compose Multiplatform Web binaries are multi-MB (see MIGRATION_PLAN.md
         # risk R6) - surfaced on every run so growth is visible instead of silently creeping up.
-        run: du -sh webApp/build/dist/wasmJs/productionExecutable
+        # Gzipped as well as raw, because Pages serves gzip and that is what a visitor waits for;
+        # pr-checks.yml enforces a budget on that number.
+        run: |
+          DIST=webApp/build/dist/wasmJs/productionExecutable
+          du -sh "$DIST"
+          TOTAL=0
+          for FILE in $(find "$DIST" -type f ! -name '*.map'); do
+            TOTAL=$((TOTAL + $(gzip -c "$FILE" | wc -c)))
+          done
+          echo "Gzipped download size: $((TOTAL / 1024)) KB"
 
       # actions/upload-pages-artifact and actions/deploy-pages below are pinned by version tag,
       # not commit SHA like this repo's other third-party actions - GitHub scope for this
