@@ -8,6 +8,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import org.neteinstein.pickaname.app.SyncNavigationWithPlatformHistory
+import org.neteinstein.pickaname.app.platformStartRoute
 import org.neteinstein.pickaname.presentation.namelist.NameListScreen
 import org.neteinstein.pickaname.presentation.settings.SettingsScreen
 import org.neteinstein.pickaname.presentation.splash.SplashScreen
@@ -23,9 +25,15 @@ fun PickANameNavHost(
     logo: Painter,
     navController: NavHostController = rememberNavController()
 ) {
+    // Keeps the browser's address bar, Back button and reload in step with the graph; a no-op
+    // on Android and iOS (see SyncNavigationWithPlatformHistory).
+    SyncNavigationWithPlatformHistory(navController)
+
     NavHost(
         navController = navController,
-        startDestination = Routes.SPLASH,
+        // A shared link or a reload can name the screen to open on; every platform but web
+        // always answers null and gets the normal first-launch flow.
+        startDestination = platformStartRoute() ?: Routes.SPLASH,
         enterTransition = pushEnter,
         exitTransition = pushExit,
         popEnterTransition = popEnter,

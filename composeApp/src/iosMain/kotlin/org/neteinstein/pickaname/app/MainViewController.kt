@@ -14,15 +14,19 @@ import platform.UIKit.UIViewController
  * The entry point an iOS app shell calls: `MainViewController()` from SwiftUI/UIKit, exactly as
  * `:app`'s `MainActivity` calls [App] and `webApp`'s `main()` does on the web.
  *
- * There is no Xcode project in this repo yet (see MIGRATION_PLAN.md §9.8 on iOS scope), so this
- * is currently validated by compiling and linking the framework rather than by running an app.
- * Koin is started here rather than in the shell so that stays true for whatever shell arrives.
+ * `iosApp/` is the SwiftUI shell that calls it. Koin is started here rather than in Swift so the
+ * three shells stay symmetrical: each one hands the shared app its brand mark and nothing else.
  */
 fun MainViewController(): UIViewController = ComposeUIViewController {
     App(logo = painterResource(Res.drawable.app_logo))
 }
 
-/** Called once by the iOS shell before the first [MainViewController]. */
-fun initKoin() {
+/**
+ * Called once by the iOS shell before the first [MainViewController].
+ *
+ * Not named `initKoin`: Objective-C reserves the `init` prefix for initialisers, so Kotlin/Native
+ * exports such a function as `doInitKoin()`, and Swift callers would see that instead.
+ */
+fun setupKoin() {
     startKoin { modules(appModules()) }
 }

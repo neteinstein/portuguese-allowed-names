@@ -1,43 +1,15 @@
-@file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
-
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.android.library)
+    id("pickaname.kmp.library")
 }
 
 kotlin {
-    androidTarget {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-    }
-    wasmJs {
-        browser()
-    }
-    iosArm64()
-    iosSimulatorArm64()
-    // For the snapshot generator that runs in CI (see core:parser's jvm target).
+    // This module's extra target: the snapshot generator that runs in CI needs the domain models
+    // on the JVM (see core:parser's jvm target and tools/names-snapshot).
     jvm()
 
     sourceSets {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
-    }
-}
-
-android {
-    namespace = "org.neteinstein.pickaname.core.model"
-    compileSdk = 36
-
-    defaultConfig {
-        minSdk = 23
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
     }
 }

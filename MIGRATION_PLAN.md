@@ -1149,24 +1149,54 @@ one:
 
 `pr-checks.yml` now has a **web** job (wasmJs tests in headless Chrome plus
 the same production distribution `deploy-web.yml` publishes) and an **iOS**
-job (shared tests on a simulator plus linking the framework). The runtime
-smoke check is still missing - a `runComposeUiTest` in `composeApp` that
-mounts `App()` would be the natural home for it - and that is what would
-have caught this phase's `IrLinkageError` before a browser did.
+job (shared tests on a simulator plus linking the framework).
 
-`kotlin-js-store/` stays gitignored; now that a wasm build runs on every
-PR, committing the lock is a decision that could reasonably be revisited.
+The runtime smoke check exists too: `composeApp`'s `AppRuntimeSmokeTest`
+composes the real `App()` - real Koin graph, real navigation, real
+resources - in a real browser and fails if nothing renders. That is the
+check that was missing when the Compose version skew shipped an app which
+compiled perfectly and died on load; no compile-time check can catch that
+class of bug. It was verified the only way such a test is worth anything:
+by deliberately breaking `App()` and confirming it goes red, then restoring
+it. On CI it runs in **Firefox as well as Chrome**, since "it renders" is
+precisely the claim that can differ between engines (Kotlin/Wasm needs
+WasmGC, which engines shipped at different times); locally it stays
+Chrome-only so a machine without Firefox isn't punished.
 
-### 9.2 `build-logic` convention plugins are now overdue
+`kotlin-js-store/wasm/yarn.lock` **is now committed**, which was always
+conditional on exactly this: a lock mismatch now fails a PR check rather
+than surfacing after merge. It pins the JS toolchain (karma, webpack,
+@js-joda) and `pdfjs-dist`, so a web build resolves the same packages
+everywhere. If a dependency bump makes it mismatch, the fix is
+`./gradlew kotlinWasmUpgradeYarnLock` and committing the result.
+
+### 9.2 `build-logic` convention plugins - DONE
 
 Phase 0 deferred them with an explicit trigger: "once Phase 2's feature
 modules make the per-module boilerplate repeat enough to be worth
-abstracting". That threshold has passed - there are 15 modules, and the
-KMP ones' `build.gradle.kts` files are near-identical (same two targets,
-same `jvmTarget`, same `compileSdk`/`minSdk`, same Compose set). Three of
-them in this phase were written by copying another module's file. The next
-structural change (a new target, an AGP bump, a compileSdk bump) has to be
-made 15 times by hand.
+abstracting". That threshold passed long ago - by the end there were 15
+near-identical files, three of them written by copying another module's,
+and adding the iOS targets meant fifteen identical edits.
+
+`build-logic/convention` now holds two plugins:
+- **`pickaname.kmp.library`** - the targets (android, wasmJs, both iOS
+  ones), the JVM level, `compileSdk`/`minSdk`, and the karma browser setup.
+  The Android `namespace` is derived from the module path (`:core:model` →
+  `org.neteinstein.pickaname.core.model`), which is what every module
+  already did by hand; a module needing something else just sets its own,
+  and wins because its build script runs after the plugin.
+- **`pickaname.kmp.compose`** - the above plus Compose Multiplatform, so
+  the data-layer modules don't carry plugins they never use.
+
+The result: **464 lines deleted, 27 added** across the 15 module files.
+What stays per-module is what genuinely differs - dependencies, extra
+targets (`core:model`/`core:parser`'s `jvm()`), `core:database`'s KSP, and
+`composeApp`'s framework binary and namespace override.
+
+Verified across everything the plugins touch: `assembleDebug`,
+`testDebugUnitTest`, `lintDebug`, `wasmJsTest`, `iosSimulatorArm64Test`,
+the iOS framework link, `checkModuleBoundaries`, the web distribution, and
+the instrumented tests on two emulators.
 
 ### 9.3 The settings-store swap silently dropped existing users' preferences — FIXED
 
@@ -1206,28 +1236,57 @@ It also raises questions Phase 4 should answer explicitly: how the web UI
 communicates snapshot freshness ("list as of <date>"), and what happens
 when the scheduled job fails (stale snapshot, or visible warning?).
 
-### 9.5 The web build has no URL or history story (title and icon: FIXED)
+### 9.5 The web build has no URL or history story - FIXED
 
-Navigation works, but the browser's address bar never changes - every
-screen is `/index.html`, so links can't be shared, refresh always restarts
-at splash, and the browser back button does nothing (`PlatformBackHandler`
-is deliberately a no-op on web). None of this is covered by Phase 4's
-"responsive layout tweaks"; it's the difference between "the app renders in
-a browser" and "it behaves like a web page".
+`SyncNavigationWithPlatformHistory` (web actual) now keeps the graph and
+the browser in step both ways: every destination change writes a hash URL
+(`#/name_list`, `#/settings`), and `popstate` - Back and Forward - navigates
+the graph instead of leaving the site. `platformStartRoute()` lets a shared
+link or a reload open straight on a screen.
+
+Hash URLs rather than real paths on purpose: this ships to GitHub Pages,
+which serves static files, so `/settings` would 404 on reload while
+`#/settings` is always `index.html`. Splash and sync are deliberately not
+deep-linkable - they're transitions, not destinations.
+
+Verified in a browser, all four behaviours: the address bar tracks the
+screen, opening Settings updates it, Back returns to the list rather than
+leaving the site, and loading `#/settings` cold opens Settings.
 
 The page title and icon *are* now sorted: the title is set, and
 `favicon.svg` is the app's adaptive-icon artwork converted to SVG (browsers
 can't read Android vector drawables), which also clears the 404 the console
 used to show on every load.
 
-### 9.6 Binary size has a number but no budget (R6)
+### 9.6 Binary size has a number but no budget (R6) - FIXED
 
-The production distribution is ~16 MB uncompressed (~8 MB of that is
-skiko.wasm, ~1.5 MB pdf.js). `deploy-web.yml` prints the size but nothing
-acts on it. Phase 4 should set a target and name the levers: dropping
-pdf.js from the web bundle once snapshots land (it stays useful only for a
-user-supplied CORS-enabled URL), and checking what GitHub Pages actually
-serves compressed.
+Measured properly rather than estimated, since what matters is what a
+visitor waits for: **4.7 MB gzipped** (13.7 MB raw), and GitHub Pages does
+serve gzip - confirmed against the live site's response headers. The split:
+
+| part | raw | gzipped |
+|---|---|---|
+| skiko.wasm (Compose's renderer) | 8.4 MB | 3.2 MB |
+| the app itself | 4.9 MB | 1.4 MB |
+| `pickaname.js` | 588 KB | 106 KB |
+| names snapshot | 68 KB | 24 KB |
+
+Two things worth correcting about the earlier estimate. **pdf.js is no
+longer in the bundle at all** - once the web build switched to the
+published snapshot, nothing on the web path calls `PdfTextExtractor`, so
+its dynamic `import()` is dropped and webpack emits no chunk for it. The
+dependency stays declared, costing only CI install time, so the capability
+is there if a user-supplied CORS-enabled URL is ever wired up. And the
+app's own wasm looks like it grew 5x versus an earlier note - it didn't;
+that measurement was taken when `composeApp` was still a placeholder with
+two `Text`s in it.
+
+`pr-checks.yml` now **enforces** a 5.6 MB gzipped budget (~15% headroom),
+and `deploy-web.yml` reports gzipped alongside raw. The budget exists to
+catch a regression - accidentally bundling something large again - not to
+police ordinary growth; raising it deliberately is a fine outcome, silently
+shipping 8 MB is not. The dominant cost, skiko, is fixed by Compose
+Multiplatform itself and is not something this project can shrink.
 
 ### 9.7 The only end-to-end Android test is still disabled - FIXED
 
@@ -1252,19 +1311,21 @@ Verified three consecutive runs on two emulators, from a *fresh install*
 
 ### 9.8 Smaller items
 
-- **`material-icons-extended` is pinned at 1.7.3**, the last multiplatform
-  release JetBrains published. It works (icons are just `ImageVector`s) but
-  it is a dead coordinate; a maintained icon source will be needed
-  eventually.
-- **iOS** is no longer an aside: every KMP module now has `iosArm64` +
-  `iosSimulatorArm64` targets with real actuals (PDFKit for text
-  extraction, `NSUserDefaults` for both stores, Foundation's diacritic
-  folding, `UIApplication` for opening URLs and the per-app language
-  screen), `composeApp` exposes a `MainViewController()` entry point, and
-  CI links the framework and runs the shared tests on a simulator. What
-  does **not** exist is an Xcode project, so nothing has been *run* on iOS
-  - the checks prove it compiles, links and passes shared tests, which is
-  the honest limit without an app shell.
+- **`material-icons-extended` stays pinned at 1.7.3**, the last
+  multiplatform release JetBrains published - a deliberate decision, not an
+  oversight. The artifact contains nothing but `ImageVector` declarations,
+  it is pinned so it cannot change under us, and on Android it resolves to
+  the maintained androidx artifact anyway. Replacing it means vendoring the
+  ~12 icons the app uses that aren't in `material-icons-core`, which is
+  worth doing when something actually breaks - a Compose Multiplatform
+  upgrade that its `ImageVector` API no longer matches - rather than
+  pre-emptively.
+- **iOS now has an app, and it runs.** `iosApp/` is a SwiftUI shell (an
+  Xcode project, hand-written since no generator is available here) that
+  hosts `MainViewController()`, with a build phase that builds the shared
+  framework through Gradle. Installed on a simulator it lists all 7,481
+  names, same as Android and web. See §11 for what running it - rather
+  than just linking it - immediately caught.
 - **No shared UI tests at all.** Compose Multiplatform supports
   `runComposeUiTest` in `commonTest`; the four feature modules have
   ViewModel tests only - though those now run on all three platforms (see
@@ -1324,9 +1385,10 @@ failure is misleading - an `OutOfMemoryError` in one module surfaces as
 "Back-end: Please report this problem" in whichever module compiles next.
 `org.gradle.jvmargs` is now 4 GB.
 
-The use-case tests in `core:domain` stay on JUnit/MockK for now: they are
-pure logic with no platform surface, so running them three times buys less
-than the ViewModel suites did.
+The `core:domain` use-case tests followed the same route afterwards: 19
+tests, now running on all three platforms, rewritten around the same fakes.
+That also let `core:domain` drop MockK, Truth and JUnit entirely - it has
+no `androidUnitTest` source set left at all.
 
 ## 10. Phase 7: one Android shell, named `androidApp`
 
@@ -1372,3 +1434,38 @@ GitHub Actions. The first `release.yml` run after this merges is the thing
 to watch - specifically that the keystore lands at `androidApp/` and that
 both `androidApp-release.apk` and `androidApp-release.aab` are found where
 the workflow now looks for them.
+
+## 11. What running the iOS app caught that linking never would
+
+The iOS target compiled, linked and passed its shared tests for several
+commits before there was an app to run. The first launch found two defects
+that none of that could have:
+
+**1. A missing Info.plist key aborts the process.** Compose Multiplatform's
+own `PlistSanityCheck` calls `error()` when `CADisableMinimumFrameDurationOnPhone`
+is absent, so the app died on launch with SIGABRT. Nothing in the Kotlin
+code is wrong; the shell just has to declare it.
+
+**2. PDFKit's text APIs are not dependable in an app process - it parsed
+488 names instead of 7,481.** Worth recording in detail, because the
+symptom was so misleading:
+
+- The app downloaded the full 2,905,263 bytes and extracted text with the
+  *same character count and line count* as a test run of the same code -
+  but arranged one fragment per line ("Abd", "Abdel", "Masculinos") rather
+  than as the rows the document actually shows.
+- `PDFDocument.string`, `PDFPage.string` and `selectionsByLine()` all
+  behaved this way inside the app, while all three returned proper rows in
+  a test process on the same simulator. The parser was blameless: fed the
+  test's text it produced 7,481 names; fed the app's, 488 - which happened
+  to be the alphabetical tail, so the app looked plausibly populated.
+- The fix is to stop asking PDFKit to lay text out at all:
+  `PdfTextExtractor` now takes the fragments and their bounds and rebuilds
+  rows by baseline, exactly as the web extractor does with pdf.js. Those
+  are facts PDFKit reports consistently.
+
+The lesson generalises past iOS: "it compiles and links" is not evidence
+that a platform works, and a difference between a test harness and a real
+app is not a reason to trust the test. The iOS extractor now has its own
+fixture test (`core:parser`'s `iosTest`), sharing one fixture with the web
+one so both engines are held to the same expected rows.

@@ -159,6 +159,31 @@ jobs:
       - name: Report artifact size
         run: du -sh webApp/build/dist/wasmJs/productionExecutable
 
+      - name: Check the distribution's download size
+        run: |
+          set -euo pipefail
+          DIST=webApp/build/dist/wasmJs/productionExecutable
+          # What a visitor actually downloads: GitHub Pages serves gzip, and source maps are
+          # never fetched by a normal page load, so both are accounted for the way they're felt.
+          TOTAL=0
+          for FILE in $(find "$DIST" -type f ! -name '*.map'); do
+            SIZE=$(gzip -c "$FILE" | wc -c)
+            TOTAL=$((TOTAL + SIZE))
+          done
+          TOTAL_KB=$((TOTAL / 1024))
+          echo "Gzipped download size: ${TOTAL_KB} KB"
+          du -sh "$DIST"
+          # Budget with ~15% headroom over the measured size at the time of writing (~4.7 MB
+          # gzipped, of which Compose's skiko renderer alone is ~3.2 MB and fixed). This exists
+          # to catch a *regression* - accidentally bundling something large again, like the
+          # pdf.js chunks that the snapshot work removed from the web path - not to police
+          # ordinary growth. If a real feature needs the room, raise it deliberately.
+          BUDGET_KB=5600
+          if [ "$TOTAL_KB" -gt "$BUDGET_KB" ]; then
+            echo "::error::Web bundle is ${TOTAL_KB} KB gzipped, over the ${BUDGET_KB} KB budget. See MIGRATION_PLAN.md risk R6."
+            exit 1
+          fi
+
       - name: Upload wasmJs test results
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

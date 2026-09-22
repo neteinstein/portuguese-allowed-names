@@ -1,29 +1,20 @@
-@file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+@file:OptIn(
+    // compose.uiTest, used by the browser smoke test below.
+    org.jetbrains.compose.ExperimentalComposeLibrary::class,
+)
 
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.compose.multiplatform)
-    alias(libs.plugins.compose.compiler)
+    id("pickaname.kmp.compose")
 }
 
 kotlin {
-    androidTarget {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-    }
-    wasmJs {
-        browser()
-    }
-    // A real framework binary, not just compiled klibs: an iOS app shell imports this, and
-    // linking is what proves every actual in the graph is actually there (see MIGRATION_PLAN.md
-    // - there is no Xcode project in this repo yet, so linking is the strongest iOS check CI can
-    // run).
-    listOf(iosArm64(), iosSimulatorArm64()).forEach { iosTarget ->
-        iosTarget.binaries.framework {
+    // A real framework binary, not just compiled klibs: iosApp imports this, and linking is what
+    // proves every actual in the graph is really there. Configured across whichever native
+    // targets the convention plugin declared, rather than naming them again here.
+    targets.withType<KotlinNativeTarget>().configureEach {
+        binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
         }
@@ -69,6 +60,17 @@ kotlin {
             implementation(libs.koin.android)
             implementation(libs.ktor.client.cio)
         }
+        val wasmJsTest by getting {
+            dependencies {
+                // Composes the real App() in a real browser - see AppRuntimeSmokeTest.
+                implementation(kotlin("test"))
+                implementation(compose.uiTest)
+            }
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)
+        }
         iosMain.dependencies {
             // Ktor's Apple engine (NSURLSession) - the iOS half of platformModule().
             implementation(libs.ktor.client.darwin)
@@ -84,15 +86,7 @@ kotlin {
 }
 
 android {
+    // The one module whose namespace isn't its path: everything else is derived by the
+    // convention plugin, and the rest of this block (SDK levels, Java level) comes from there.
     namespace = "org.neteinstein.pickaname.app"
-    compileSdk = 36
-
-    defaultConfig {
-        minSdk = 23
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
 }

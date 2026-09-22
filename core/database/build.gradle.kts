@@ -1,24 +1,11 @@
-@file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
-
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.android.library)
+    id("pickaname.kmp.library")
+    // Module-specific, so it stays here rather than in the convention plugin: this is the only
+    // module with an annotation processor (Room's, for the Android target).
     alias(libs.plugins.ksp)
 }
 
 kotlin {
-    androidTarget {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-    }
-    wasmJs {
-        browser()
-    }
-    iosArm64()
-    iosSimulatorArm64()
 
     sourceSets {
         commonMain.dependencies {
@@ -38,6 +25,10 @@ kotlin {
                 // localStorage + the org.w3c.dom.Storage type the web store is built on.
                 implementation(libs.kotlinx.browser)
             }
+        }
+        commonTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
         }
         val androidUnitTest by getting {
             dependencies {
@@ -63,16 +54,3 @@ dependencies {
     add("kspAndroid", libs.room.compiler)
 }
 
-android {
-    namespace = "org.neteinstein.pickaname.core.database"
-    compileSdk = 36
-
-    defaultConfig {
-        minSdk = 23
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-}
