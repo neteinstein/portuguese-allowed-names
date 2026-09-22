@@ -11,9 +11,11 @@ name: Update Names Snapshot
 # The Android and iOS apps are unaffected: they still download and parse the source themselves.
 on:
   schedule:
-    # Weekly, Monday 05:00 UTC. The source list changes rarely; this is about not going stale,
-    # not about latency.
-    - cron: '0 5 * * 1'
+    # The 1st of each month, 05:00 UTC. The IRN list changes rarely - it had not changed at all
+    # across the runs of this workflow so far - so this is about the published snapshot not going
+    # quietly stale, not about latency. A run that finds no change commits nothing, so the cost of
+    # the cadence is one short job a month; use workflow_dispatch when a change is known about.
+    - cron: '0 5 1 * *'
   workflow_dispatch:
     inputs:
       source-url:
