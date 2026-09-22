@@ -22,6 +22,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,6 +30,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -71,6 +73,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -90,10 +93,12 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -104,6 +109,7 @@ import org.neteinstein.pickaname.domain.model.Gender
 import org.neteinstein.pickaname.domain.model.NameEntry
 import org.neteinstein.pickaname.domain.model.SearchEngine
 import org.neteinstein.pickaname.presentation.common.GenderTag
+import org.neteinstein.pickaname.presentation.common.arrowKeyScroll
 import org.neteinstein.pickaname.presentation.theme.PickANameExtendedColors
 import org.neteinstein.pickaname.presentation.theme.PickANameTheme
 import kotlin.math.PI
@@ -190,15 +196,27 @@ fun NameListScreen(
         }
     }
 
+    // Read here, in the screen's own window - see maxSheetContentHeight.
+    val sheetMaxContentHeight = maxSheetContentHeight()
+
     if (showRulesSheet) {
-        ModalBottomSheet(onDismissRequest = { showRulesSheet = false }) {
-            RulesBottomSheetContent()
+        ModalBottomSheet(
+            onDismissRequest = { showRulesSheet = false },
+            // Fully expanded, not half-height: these sheets are longer than the partially
+            // expanded state shows, and the half-height state clipped the rest with no way to
+            // reach it - the drag handle resized the sheet rather than scrolling the content.
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            RulesBottomSheetContent(maxContentHeight = sheetMaxContentHeight)
         }
     }
 
     if (showTraditionalNamesInfoSheet) {
-        ModalBottomSheet(onDismissRequest = { showTraditionalNamesInfoSheet = false }) {
-            TraditionalNamesInfoBottomSheetContent()
+        ModalBottomSheet(
+            onDismissRequest = { showTraditionalNamesInfoSheet = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ) {
+            TraditionalNamesInfoBottomSheetContent(maxContentHeight = sheetMaxContentHeight)
         }
     }
 
@@ -330,7 +348,10 @@ fun NameListScreen(
                         Box(modifier = Modifier.fillMaxSize()) {
                             LazyColumn(
                                 state = listState,
-                                modifier = Modifier.fillMaxSize(),
+                                // Arrow keys scroll the list (see arrowKeyScroll): on web there
+                                // is no browser scrolling to fall back on, since Compose draws
+                                // to a canvas.
+                                modifier = Modifier.fillMaxSize().arrowKeyScroll(listState),
                                 contentPadding = PaddingValues(
                                     start = 16.dp,
                                     top = 8.dp,
@@ -396,6 +417,22 @@ private const val ALLOWED_NAMES_PDF_URL =
     "https://link.neteinstein.org/portuguese-allowed-names-list"
 private const val REGISTER_BIRTH_URL = "https://justica.gov.pt/Servicos/Registar-nascimento"
 
+/**
+ * How tall a bottom sheet's scrolling content may get before it has to scroll instead of growing.
+ * Not the whole window: the sheet keeps its handle, rounded top and a margin above it.
+ *
+ * Must be read *outside* the sheet - a ModalBottomSheet hosts its content in a separate platform
+ * window, and [LocalWindowInfo] in there describes that window, not the screen, so a cap computed
+ * inside never bounded anything.
+ */
+@Composable
+private fun maxSheetContentHeight(): Dp {
+    val windowHeightPx = LocalWindowInfo.current.containerSize.height
+    return with(LocalDensity.current) { (windowHeightPx * SHEET_MAX_HEIGHT_FRACTION).toDp() }
+}
+
+private const val SHEET_MAX_HEIGHT_FRACTION = 0.8f
+
 private data class OfficialResourceLink(
     val title: String,
     val description: String,
@@ -403,7 +440,8 @@ private data class OfficialResourceLink(
 )
 
 @Composable
-private fun RulesBottomSheetContent() {
+private fun ColumnScope.RulesBottomSheetContent(maxContentHeight: Dp) {
+    val scrollState = rememberScrollState()
     val openUrlExternally = rememberExternalUrlOpener()
     val officialLinks = listOf(
         OfficialResourceLink(
@@ -426,7 +464,13 @@ private fun RulesBottomSheetContent() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
+            // The cap is what makes verticalScroll actually scroll: without a bound the sheet
+            // grows past the bottom of the window and the overflow is simply clipped - no scroll
+            // range, so wheel, drag and keyboard all did nothing. It only bites on a window too
+            // short for the content; anywhere taller the sheet is its natural size as before.
+            .heightIn(max = maxContentHeight)
+            .verticalScroll(scrollState)
+            .arrowKeyScroll(scrollState)
             .padding(horizontal = 24.dp)
             .padding(bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -519,11 +563,16 @@ private fun OfficialResourceLinkRow(link: OfficialResourceLink, onClick: () -> U
 }
 
 @Composable
-private fun TraditionalNamesInfoBottomSheetContent() {
+private fun ColumnScope.TraditionalNamesInfoBottomSheetContent(maxContentHeight: Dp) {
+    val scrollState = rememberScrollState()
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
+            // See RulesBottomSheetContent: bounded height is what makes the scroll real.
+            .heightIn(max = maxContentHeight)
+            .verticalScroll(scrollState)
+            .arrowKeyScroll(scrollState)
             .padding(horizontal = 24.dp)
             .padding(bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
