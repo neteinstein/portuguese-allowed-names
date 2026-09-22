@@ -35,7 +35,7 @@ merging does not trigger a release, and neither does a direct push that bypasses
 
 - **Test**: Runs lint and unit tests on release variant, against the actual merge commit
 - **Bump patch version**: Auto-increments the PATCH component of `versionName`
-  (`MAJOR.MINOR.PATCH`) in `app/build.gradle.kts` and pushes that commit straight to the base
+  (`MAJOR.MINOR.PATCH`) in `androidApp/build.gradle.kts` and pushes that commit straight to the base
   branch, before anything is built. This means `versionName` no longer needs a manual "bump
   version" commit in every PR — MAJOR/MINOR are still bumped by hand when you want one, PATCH
   bumps itself on every merge.
@@ -228,7 +228,7 @@ code tied to its CI run. Local/dev builds that don't pass the property fall back
 is taken directly from `github.run_number` (the same value passed to Gradle) rather than parsed
 from the file, since it's no longer a literal there.
 
-`app/build.gradle.kts` also declares an empty `signingConfigs.release` and only attaches it to
+`androidApp/build.gradle.kts` also declares an empty `signingConfigs.release` and only attaches it to
 the `release` build type when the `android.injected.signing.store.file` Gradle property is
 present (`release.yml` passes it, along with the store/key password and key alias, on the
 command line). This keeps local `./gradlew assembleRelease` runs working unsigned for

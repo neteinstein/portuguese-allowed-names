@@ -34,7 +34,7 @@ the same code can also target the web. The migration is incremental and tracked 
 from the extracted modules below plus the screens that haven't moved yet.
 
 ```
-app/                Shipping Android app: splash, sync, name list screens, navigation, Koin wiring
+androidApp/         Android shell: MainActivity, manifest, launcher icons, Koin startup
 core/
   model/            Plain domain models (NameEntry, Gender, RefreshPeriod, …) — no dependencies
   domain/           Repository interfaces + use cases — depends only on core:model

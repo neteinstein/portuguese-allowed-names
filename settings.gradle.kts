@@ -24,7 +24,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Pick-A-Name"
-include(":app")
+include(":androidApp")
 include(":core:model")
 include(":core:domain")
 include(":core:designsystem")

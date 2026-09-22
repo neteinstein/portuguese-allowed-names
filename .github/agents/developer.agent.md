@@ -11,7 +11,7 @@ Portugal, based on a PDF published by the IRN.
 ## Codebase layout
 
 ```
-app/src/main/kotlin/org/neteinstein/pickaname/
+androidApp/src/main/kotlin/org/neteinstein/pickaname/
   presentation/   Compose UI + ViewModels (splash, sync, namelist, settings, navigation, theme, common)
   domain/         Use cases, repository interfaces, plain domain models — no Android deps
   data/           Repository impls, Room database, DataStore, remote fetch, PDF parser, mappers

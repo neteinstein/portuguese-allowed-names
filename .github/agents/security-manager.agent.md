@@ -21,7 +21,7 @@ attack surface is sound.
 - **Local storage**: Room (`data/local/database`) and DataStore (`data/local/datastore`) only
   ever hold public name-list data and app settings — confirm no PII or sensitive data ever ends
   up there, consistent with the privacy policy.
-- **Dependencies**: check `app/build.gradle.kts` / `gradle/libs.versions.toml` for outdated or
+- **Dependencies**: check `androidApp/build.gradle.kts` / `gradle/libs.versions.toml` for outdated or
   known-vulnerable dependencies when reviewing a dependency bump.
 - **CI/release secrets**: `.github/workflows/release.yml` and `.github/CI_CD_SETUP.md` document
   `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`, and `PLAY_STORE_JSON_KEY`.

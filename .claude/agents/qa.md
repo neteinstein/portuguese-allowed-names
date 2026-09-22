@@ -10,8 +10,8 @@ MVVM + Clean Architecture, Koin, Room, DataStore).
 ## Test layout
 
 ```
-app/src/test/kotlin/...        JVM unit tests, mirrors app/src/main/kotlin package-for-package
-app/src/androidTest/kotlin/... Instrumented tests (run on an emulator/device)
+androidApp/src/test/kotlin/...        JVM unit tests, mirrors androidApp/src/main/kotlin package-for-package
+androidApp/src/androidTest/kotlin/... Instrumented tests (run on an emulator/device)
 ```
 
 Unit tests exist today for presentation ViewModels (splash, settings, namelist, sync), the PDF

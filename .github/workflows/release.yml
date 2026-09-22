@@ -78,7 +78,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: test-results
-          path: app/build/test-results/
+          path: androidApp/build/test-results/
 
   build-release:
     name: Build Signed Release
@@ -120,10 +120,10 @@ jobs:
             git fetch origin "$BASE_REF"
             git checkout -B release-bump "origin/$BASE_REF"
 
-            CURRENT_VERSION=$(grep -E '^[[:space:]]*versionName = "' app/build.gradle.kts | head -1 | sed -E 's/.*versionName = "([^"]+)".*/\1/')
+            CURRENT_VERSION=$(grep -E '^[[:space:]]*versionName = "' androidApp/build.gradle.kts | head -1 | sed -E 's/.*versionName = "([^"]+)".*/\1/')
 
             if [[ ! "$CURRENT_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-              echo "::error::versionName '$CURRENT_VERSION' in app/build.gradle.kts is not in MAJOR.MINOR.PATCH format"
+              echo "::error::versionName '$CURRENT_VERSION' in androidApp/build.gradle.kts is not in MAJOR.MINOR.PATCH format"
               exit 1
             fi
 
@@ -133,8 +133,8 @@ jobs:
             NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
             echo "Bumping version: $CURRENT_VERSION -> $NEW_VERSION"
 
-            sed -i "s/versionName = \"$CURRENT_VERSION\"/versionName = \"$NEW_VERSION\"/" app/build.gradle.kts
-            git add app/build.gradle.kts
+            sed -i "s/versionName = \"$CURRENT_VERSION\"/versionName = \"$NEW_VERSION\"/" androidApp/build.gradle.kts
+            git add androidApp/build.gradle.kts
             git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
 
             if git push origin "HEAD:$BASE_REF"; then
@@ -181,7 +181,7 @@ jobs:
             echo "::error::KEYSTORE_BASE64 secret is not set. A signed release requires the KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS and KEY_PASSWORD secrets (see .github/CI_CD_SETUP.md)."
             exit 1
           fi
-          echo "$ENCODED_KEYSTORE" | base64 -di > app/release-keystore.jks
+          echo "$ENCODED_KEYSTORE" | base64 -di > androidApp/release-keystore.jks
 
       - name: Build Release APK
         env:
@@ -191,7 +191,7 @@ jobs:
         run: |
           ./gradlew assembleRelease \
             -PversionCode=${{ github.run_number }} \
-            -Pandroid.injected.signing.store.file="$(pwd)/app/release-keystore.jks" \
+            -Pandroid.injected.signing.store.file="$(pwd)/androidApp/release-keystore.jks" \
             -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
             -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
             -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
@@ -204,7 +204,7 @@ jobs:
         run: |
           ./gradlew bundleRelease \
             -PversionCode=${{ github.run_number }} \
-            -Pandroid.injected.signing.store.file="$(pwd)/app/release-keystore.jks" \
+            -Pandroid.injected.signing.store.file="$(pwd)/androidApp/release-keystore.jks" \
             -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
             -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
             -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
@@ -213,7 +213,7 @@ jobs:
         run: |
           SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           BUILD_TOOLS_DIR=$(find "$SDK_ROOT/build-tools" -maxdepth 1 -mindepth 1 -type d | sort -V | tail -1)
-          "$BUILD_TOOLS_DIR/apksigner" verify --print-certs app/build/outputs/apk/release/app-release.apk
+          "$BUILD_TOOLS_DIR/apksigner" verify --print-certs androidApp/build/outputs/apk/release/androidApp-release.apk
 
       - name: Generate Release Notes
         id: release_notes
@@ -243,7 +243,7 @@ jobs:
       - name: Get version from gradle
         id: version
         run: |
-          VERSION_NAME=$(grep "versionName" app/build.gradle.kts | awk -F'"' '{print $2}' | head -1)
+          VERSION_NAME=$(grep "versionName" androidApp/build.gradle.kts | awk -F'"' '{print $2}' | head -1)
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_OUTPUT
           # The actual versionCode: it's not a literal in build.gradle.kts anymore (see the
           # -PversionCode passed to assembleRelease/bundleRelease above), so the run number
@@ -264,8 +264,8 @@ jobs:
           RELEASE_NOTES: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
         run: |
           gh release create "v$VERSION_NAME" \
-            "app/build/outputs/apk/release/app-release.apk#AllowedPortugueseNames_v${VERSION_UNDERSCORE}.apk" \
-            "app/build/outputs/bundle/release/app-release.aab#AllowedPortugueseNames_v${VERSION_UNDERSCORE}.aab" \
+            "androidApp/build/outputs/apk/release/androidApp-release.apk#AllowedPortugueseNames_v${VERSION_UNDERSCORE}.apk" \
+            "androidApp/build/outputs/bundle/release/androidApp-release.aab#AllowedPortugueseNames_v${VERSION_UNDERSCORE}.aab" \
             --title "Release v$VERSION_NAME" \
             --notes "$RELEASE_NOTES"
 
@@ -290,7 +290,7 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_JSON_KEY }}
           packageName: org.neteinstein.pickaname
-          releaseFiles: app/build/outputs/bundle/release/app-release.aab
+          releaseFiles: androidApp/build/outputs/bundle/release/androidApp-release.aab
           tracks: internal
           status: completed
           changesNotSentForReview: true
@@ -305,6 +305,6 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_JSON_KEY }}
           packageName: org.neteinstein.pickaname
-          releaseFiles: app/build/outputs/bundle/release/app-release.aab
+          releaseFiles: androidApp/build/outputs/bundle/release/androidApp-release.aab
           tracks: internal
           status: completed
