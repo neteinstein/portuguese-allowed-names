@@ -64,3 +64,10 @@ subprojects {
         dependsOn(checkModuleBoundaries)
     }
 }
+
+// Dependabot alert #1 (GHSA for ws < 8.21.0: memory exhaustion DoS from tiny fragments). The
+// Kotlin Gradle plugin pins `ws` for the wasmJs Node.js toolchain; force the patched version until
+// the plugin's own pin catches up, then drop this.
+plugins.withType<org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnPlugin> {
+    the<org.jetbrains.kotlin.gradle.targets.wasm.yarn.WasmYarnRootExtension>().resolution("ws", "8.21.0")
+}
