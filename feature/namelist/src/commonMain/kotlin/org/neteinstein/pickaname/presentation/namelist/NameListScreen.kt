@@ -77,6 +77,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -643,10 +644,10 @@ private const val HEX_DIGITS = "0123456789ABCDEF"
 private fun NameMeaningOverlay(entry: NameEntry?, searchEngine: SearchEngine, onDismiss: () -> Unit) {
     // Keeps rendering the last looked-up name while the sheet fades out, instead of blanking
     // the WebView the instant `entry` becomes null.
+    // Updated during composition, not in an effect: an effect would only run after the first
+    // frame of a re-opened sheet, which would already have built its WebView for the previous name.
     var lastEntry by remember { mutableStateOf<NameEntry?>(null) }
-    LaunchedEffect(entry) {
-        entry?.let { lastEntry = it }
-    }
+    if (entry != null && entry != lastEntry) lastEntry = entry
 
     PlatformBackHandler(enabled = entry != null, onBack = onDismiss)
 
@@ -730,7 +731,11 @@ private fun NameMeaningBottomSheetContent(entry: NameEntry, searchEngine: Search
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
         )
-        InAppBrowser(url = searchUrl, modifier = Modifier.fillMaxSize())
+        // The platform browser view only loads the URL it was created with, so a new search needs
+        // a fresh one rather than the previous name's page.
+        key(searchUrl) {
+            InAppBrowser(url = searchUrl, modifier = Modifier.fillMaxSize())
+        }
     }
 }
 
