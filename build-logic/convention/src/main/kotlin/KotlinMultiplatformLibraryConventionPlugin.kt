@@ -78,7 +78,7 @@ class KotlinMultiplatformLibraryConventionPlugin : Plugin<Project> {
         // The one place these change. :androidApp sets its own, since an application module
         // also needs targetSdk and the version fields.
         const val COMPILE_SDK = 36
-        const val MIN_SDK = 23
+        const val MIN_SDK = 24
         const val ROOT_PACKAGE = "org.neteinstein.pickaname"
     }
 }
