@@ -73,10 +73,10 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun defaults_the_search_engine_to_brave_before_it_loads() = runTest(mainDispatcher.dispatcher) {
+    fun defaults_the_search_engine_to_the_platform_default_before_it_loads() = runTest(mainDispatcher.dispatcher) {
         val viewModel = createViewModel()
 
-        assertEquals(SearchEngine.BRAVE, viewModel.uiState.value.searchEngine)
+        assertEquals(SearchEngine.DEFAULT, viewModel.uiState.value.searchEngine)
     }
 
     @Test
