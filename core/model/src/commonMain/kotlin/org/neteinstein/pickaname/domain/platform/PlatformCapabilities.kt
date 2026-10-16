@@ -21,10 +21,10 @@ expect object PlatformCapabilities {
     val canConfigureNamesSource: Boolean
 
     /**
-     * The name-meaning search engine used until the user picks one.
+     * The search engine used to look up a name's meaning. Not user-configurable.
      *
      * Brave where the search is shown inside the app's own bottom sheet; Google on web, where
      * search engines refuse to be embedded and the search always opens in a new browser tab.
      */
-    val defaultSearchEngine: SearchEngine
+    val searchEngine: SearchEngine
 }

@@ -10,5 +10,4 @@ internal object SettingsKeys {
     const val SOURCE_URL = "names_source_url"
     const val REFRESH_PERIOD = "names_refresh_period"
     const val LAST_REFRESH_TIMESTAMP = "names_last_refresh_timestamp"
-    const val SEARCH_ENGINE = "name_search_engine"
 }

@@ -11,5 +11,5 @@ actual object PlatformCapabilities {
     actual val canConfigureNamesSource: Boolean = false
 
     /** Google: the search opens in a new browser tab here, so embedding is irrelevant. */
-    actual val defaultSearchEngine: SearchEngine = SearchEngine.GOOGLE
+    actual val searchEngine: SearchEngine = SearchEngine.GOOGLE
 }

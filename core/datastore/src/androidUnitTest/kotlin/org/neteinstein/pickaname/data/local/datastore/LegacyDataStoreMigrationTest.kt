@@ -34,7 +34,6 @@ class LegacyDataStoreMigrationTest {
         val legacyFile = writeLegacyPreferences(
             sourceUrl = "https://example.com/custom.pdf",
             refreshPeriod = "WEEKLY",
-            searchEngine = "BRAVE",
             lastRefresh = 1_700_000_000_000L
         )
 
@@ -43,7 +42,6 @@ class LegacyDataStoreMigrationTest {
         assertThat(settings.getStringOrNull(SettingsKeys.SOURCE_URL))
             .isEqualTo("https://example.com/custom.pdf")
         assertThat(settings.getStringOrNull(SettingsKeys.REFRESH_PERIOD)).isEqualTo("WEEKLY")
-        assertThat(settings.getStringOrNull(SettingsKeys.SEARCH_ENGINE)).isEqualTo("BRAVE")
         assertThat(settings.getLongOrNull(SettingsKeys.LAST_REFRESH_TIMESTAMP))
             .isEqualTo(1_700_000_000_000L)
     }
@@ -75,7 +73,6 @@ class LegacyDataStoreMigrationTest {
         migrateLegacyDataStoreSettings(legacyFile, settings)
 
         assertThat(settings.getStringOrNull(SettingsKeys.REFRESH_PERIOD)).isNull()
-        assertThat(settings.getStringOrNull(SettingsKeys.SEARCH_ENGINE)).isNull()
         assertThat(settings.getLongOrNull(SettingsKeys.LAST_REFRESH_TIMESTAMP)).isNull()
     }
 
@@ -117,7 +114,6 @@ class LegacyDataStoreMigrationTest {
     private suspend fun writeLegacyPreferences(
         sourceUrl: String? = null,
         refreshPeriod: String? = null,
-        searchEngine: String? = null,
         lastRefresh: Long? = null
     ): File {
         val unique = System.nanoTime()
@@ -127,7 +123,6 @@ class LegacyDataStoreMigrationTest {
             .edit { preferences ->
                 sourceUrl?.let { preferences[stringPreferencesKey(SettingsKeys.SOURCE_URL)] = it }
                 refreshPeriod?.let { preferences[stringPreferencesKey(SettingsKeys.REFRESH_PERIOD)] = it }
-                searchEngine?.let { preferences[stringPreferencesKey(SettingsKeys.SEARCH_ENGINE)] = it }
                 lastRefresh?.let { preferences[longPreferencesKey(SettingsKeys.LAST_REFRESH_TIMESTAMP)] = it }
             }
         writerScope.coroutineContext[Job]!!.cancelAndJoin()

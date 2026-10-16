@@ -51,9 +51,6 @@ internal suspend fun migrateLegacyDataStoreSettings(legacyFile: File, settings: 
     legacyPreferences[stringPreferencesKey(SettingsKeys.REFRESH_PERIOD)]?.let { period ->
         if (!settings.hasKey(SettingsKeys.REFRESH_PERIOD)) settings.putString(SettingsKeys.REFRESH_PERIOD, period)
     }
-    legacyPreferences[stringPreferencesKey(SettingsKeys.SEARCH_ENGINE)]?.let { engine ->
-        if (!settings.hasKey(SettingsKeys.SEARCH_ENGINE)) settings.putString(SettingsKeys.SEARCH_ENGINE, engine)
-    }
     legacyPreferences[longPreferencesKey(SettingsKeys.LAST_REFRESH_TIMESTAMP)]?.let { timestamp ->
         if (!settings.hasKey(SettingsKeys.LAST_REFRESH_TIMESTAMP)) {
             settings.putLong(SettingsKeys.LAST_REFRESH_TIMESTAMP, timestamp)

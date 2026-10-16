@@ -5,7 +5,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +23,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -59,7 +57,6 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.neteinstein.pickaname.domain.model.AppLanguage
 import org.neteinstein.pickaname.domain.model.RefreshPeriod
 import org.neteinstein.pickaname.domain.platform.PlatformCapabilities
-import org.neteinstein.pickaname.domain.model.SearchEngine
 import org.neteinstein.pickaname.presentation.common.arrowKeyScroll
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -70,9 +67,6 @@ import org.neteinstein.pickaname.core.designsystem.resources.refresh_period_mont
 import org.neteinstein.pickaname.core.designsystem.resources.refresh_period_quarterly
 import org.neteinstein.pickaname.core.designsystem.resources.refresh_period_weekly
 import org.neteinstein.pickaname.core.designsystem.resources.refresh_period_yearly
-import org.neteinstein.pickaname.core.designsystem.resources.search_engine_brave
-import org.neteinstein.pickaname.core.designsystem.resources.search_engine_duckduckgo
-import org.neteinstein.pickaname.core.designsystem.resources.search_engine_google
 import org.neteinstein.pickaname.core.designsystem.resources.settings_language_button
 import org.neteinstein.pickaname.core.designsystem.resources.settings_language_description
 import org.neteinstein.pickaname.core.designsystem.resources.settings_language_description_in_app
@@ -89,9 +83,6 @@ import org.neteinstein.pickaname.core.designsystem.resources.settings_refresh_pe
 import org.neteinstein.pickaname.core.designsystem.resources.settings_refresh_section
 import org.neteinstein.pickaname.core.designsystem.resources.settings_reset
 import org.neteinstein.pickaname.core.designsystem.resources.settings_save
-import org.neteinstein.pickaname.core.designsystem.resources.settings_search_engine_description
-import org.neteinstein.pickaname.core.designsystem.resources.settings_search_engine_label
-import org.neteinstein.pickaname.core.designsystem.resources.settings_search_engine_section
 import org.neteinstein.pickaname.core.designsystem.resources.settings_source_description
 import org.neteinstein.pickaname.core.designsystem.resources.settings_source_section
 import org.neteinstein.pickaname.core.designsystem.resources.settings_source_url_error
@@ -99,15 +90,11 @@ import org.neteinstein.pickaname.core.designsystem.resources.settings_source_url
 import org.neteinstein.pickaname.core.designsystem.resources.settings_title
 
 /**
- * Settings screen: link out to the OS per-app language picker, a dropdown for which search
- * engine long-pressing a name should use, a form to view/edit/reset the PDF source URL, and a
- * dropdown to configure how often the app should automatically re-check that source. Saving or
- * resetting the URL fires [SettingsEvent.SourceUpdated], which the caller uses to navigate to the
- * sync screen (re-downloading and re-parsing with the new source); the search engine and refresh
- * cadence both apply immediately on selection since neither needs a resync.
- *
- * The search engine section is hidden by default and only revealed for the current screen
- * visit after the top bar title is tapped 10 times, since most users never need to change it.
+ * Settings screen: link out to the OS per-app language picker, a form to view/edit/reset the PDF
+ * source URL, and a dropdown to configure how often the app should automatically re-check that
+ * source. Saving or resetting the URL fires [SettingsEvent.SourceUpdated], which the caller uses
+ * to navigate to the sync screen (re-downloading and re-parsing with the new source); the refresh
+ * cadence applies immediately on selection since it needs no resync.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -131,8 +118,6 @@ fun SettingsScreen(
     var visible by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { visible = true }
 
-    var titleTapCount by remember { mutableStateOf(0) }
-    var searchEngineSectionVisible by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -140,13 +125,7 @@ fun SettingsScreen(
                 title = {
                     Text(
                         text = stringResource(Res.string.settings_title),
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.clickable {
-                            titleTapCount++
-                            if (titleTapCount >= 10) {
-                                searchEngineSectionVisible = true
-                            }
-                        }
+                        fontWeight = FontWeight.SemiBold
                     )
                 },
                 navigationIcon = {
@@ -207,22 +186,6 @@ fun SettingsScreen(
                             label = stringResource(Res.string.settings_language_label),
                             optionLabel = { stringResource(it.labelRes()) },
                             onSelected = languageSelector::select
-                        )
-                    }
-                }
-
-                if (searchEngineSectionVisible) {
-                    SettingsSectionCard(
-                        icon = Icons.Filled.Search,
-                        title = stringResource(Res.string.settings_search_engine_section),
-                        description = stringResource(Res.string.settings_search_engine_description)
-                    ) {
-                        EnumDropdown(
-                            selected = uiState.searchEngine,
-                            options = SearchEngine.entries,
-                            label = stringResource(Res.string.settings_search_engine_label),
-                            optionLabel = { stringResource(it.labelRes()) },
-                            onSelected = viewModel::onSearchEngineSelected
                         )
                     }
                 }
@@ -417,12 +380,6 @@ private fun RefreshPeriod.labelRes(): StringResource = when (this) {
 private fun AppLanguage.labelRes(): StringResource = when (this) {
     AppLanguage.ENGLISH -> Res.string.settings_language_english
     AppLanguage.PORTUGUESE -> Res.string.settings_language_portuguese
-}
-
-private fun SearchEngine.labelRes(): StringResource = when (this) {
-    SearchEngine.GOOGLE -> Res.string.search_engine_google
-    SearchEngine.DUCKDUCKGO -> Res.string.search_engine_duckduckgo
-    SearchEngine.BRAVE -> Res.string.search_engine_brave
 }
 
 /**

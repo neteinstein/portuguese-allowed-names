@@ -12,21 +12,17 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.neteinstein.pickaname.domain.model.NamesSourceDefaults
 import org.neteinstein.pickaname.domain.model.RefreshPeriod
-import org.neteinstein.pickaname.domain.model.SearchEngine
 import org.neteinstein.pickaname.domain.usecase.GetLastRefreshTimestampUseCase
 import org.neteinstein.pickaname.domain.usecase.GetRefreshPeriodUseCase
-import org.neteinstein.pickaname.domain.usecase.GetSearchEngineUseCase
 import org.neteinstein.pickaname.domain.usecase.GetSourceUrlUseCase
 import org.neteinstein.pickaname.domain.usecase.ResetSourceUrlUseCase
 import org.neteinstein.pickaname.domain.usecase.UpdateRefreshPeriodUseCase
-import org.neteinstein.pickaname.domain.usecase.UpdateSearchEngineUseCase
 import org.neteinstein.pickaname.domain.usecase.UpdateSourceUrlUseCase
 
 data class SettingsUiState(
     val sourceUrl: String = "",
     val urlError: Boolean = false,
     val refreshPeriod: RefreshPeriod = RefreshPeriod.DEFAULT,
-    val searchEngine: SearchEngine = SearchEngine.DEFAULT,
     /** Epoch millis of the last successful load, or null if the list has never loaded. */
     val lastRefreshTimestamp: Long? = null
 )
@@ -42,9 +38,7 @@ class SettingsViewModel(
     private val resetSourceUrlUseCase: ResetSourceUrlUseCase,
     private val getRefreshPeriodUseCase: GetRefreshPeriodUseCase,
     private val getLastRefreshTimestampUseCase: GetLastRefreshTimestampUseCase,
-    private val updateRefreshPeriodUseCase: UpdateRefreshPeriodUseCase,
-    private val getSearchEngineUseCase: GetSearchEngineUseCase,
-    private val updateSearchEngineUseCase: UpdateSearchEngineUseCase
+    private val updateRefreshPeriodUseCase: UpdateRefreshPeriodUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -59,9 +53,6 @@ class SettingsViewModel(
         }
         viewModelScope.launch {
             _uiState.update { it.copy(refreshPeriod = getRefreshPeriodUseCase()) }
-        }
-        viewModelScope.launch {
-            _uiState.update { it.copy(searchEngine = getSearchEngineUseCase()) }
         }
         viewModelScope.launch {
             _uiState.update { it.copy(lastRefreshTimestamp = getLastRefreshTimestampUseCase()) }
@@ -99,14 +90,6 @@ class SettingsViewModel(
         _uiState.update { it.copy(refreshPeriod = period) }
         viewModelScope.launch {
             updateRefreshPeriodUseCase(period)
-        }
-    }
-
-    /** Persists immediately - like refresh cadence, a search-engine change needs no resync/reload. */
-    fun onSearchEngineSelected(engine: SearchEngine) {
-        _uiState.update { it.copy(searchEngine = engine) }
-        viewModelScope.launch {
-            updateSearchEngineUseCase(engine)
         }
     }
 }

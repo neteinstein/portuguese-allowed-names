@@ -7,5 +7,5 @@ actual object PlatformCapabilities {
     actual val canConfigureNamesSource: Boolean = true
 
     /** Shown in the in-app bottom sheet, where Brave renders cleanly embedded. */
-    actual val defaultSearchEngine: SearchEngine = SearchEngine.BRAVE
+    actual val searchEngine: SearchEngine = SearchEngine.BRAVE
 }
