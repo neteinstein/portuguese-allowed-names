@@ -1,5 +1,7 @@
 package org.neteinstein.pickaname.domain.platform
 
+import org.neteinstein.pickaname.domain.model.SearchEngine
+
 /**
  * What the app can actually offer on this platform, where the honest answer differs.
  *
@@ -17,4 +19,12 @@ expect object PlatformCapabilities {
      * instead. Offering a source URL there would be offering a setting that cannot work.
      */
     val canConfigureNamesSource: Boolean
+
+    /**
+     * The name-meaning search engine used until the user picks one.
+     *
+     * Brave where the search is shown inside the app's own bottom sheet; Google on web, where
+     * search engines refuse to be embedded and the search always opens in a new browser tab.
+     */
+    val defaultSearchEngine: SearchEngine
 }

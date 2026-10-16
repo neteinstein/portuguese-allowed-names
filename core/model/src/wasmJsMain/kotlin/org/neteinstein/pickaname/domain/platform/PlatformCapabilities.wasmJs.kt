@@ -1,5 +1,7 @@
 package org.neteinstein.pickaname.domain.platform
 
+import org.neteinstein.pickaname.domain.model.SearchEngine
+
 actual object PlatformCapabilities {
     /**
      * False: the web build syncs from the snapshot CI publishes next to it, because the official
@@ -7,4 +9,7 @@ actual object PlatformCapabilities {
      * URL setting here would do nothing.
      */
     actual val canConfigureNamesSource: Boolean = false
+
+    /** Google: the search opens in a new browser tab here, so embedding is irrelevant. */
+    actual val defaultSearchEngine: SearchEngine = SearchEngine.GOOGLE
 }

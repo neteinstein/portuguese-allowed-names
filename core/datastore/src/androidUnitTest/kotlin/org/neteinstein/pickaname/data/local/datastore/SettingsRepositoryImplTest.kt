@@ -69,11 +69,11 @@ class SettingsRepositoryImplTest {
     }
 
     @Test
-    fun `observeSearchEngine defaults to brave when nothing is persisted yet`() = runTest {
+    fun `observeSearchEngine defaults to the platform default when nothing is persisted yet`() = runTest {
         val repository = newRepository()
 
         repository.observeSearchEngine().test {
-            assertThat(awaitItem()).isEqualTo(SearchEngine.BRAVE)
+            assertThat(awaitItem()).isEqualTo(SearchEngine.DEFAULT)
         }
     }
 
@@ -98,7 +98,7 @@ class SettingsRepositoryImplTest {
         val repository = newRepository()
 
         repository.observeSearchEngine().test {
-            assertThat(awaitItem()).isEqualTo(SearchEngine.BRAVE)
+            assertThat(awaitItem()).isEqualTo(SearchEngine.DEFAULT)
 
             repository.setSearchEngine(SearchEngine.GOOGLE)
 
