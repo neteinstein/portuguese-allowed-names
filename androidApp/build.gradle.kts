@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "org.neteinstein.pickaname"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 36
         // CI (see .github/workflows/release.yml) passes the real value via
         // -PversionCode=<GitHub Actions run number>, so every released build gets a
