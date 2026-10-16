@@ -10,7 +10,6 @@ import org.neteinstein.pickaname.domain.model.SyncFailureReason
 import org.neteinstein.pickaname.domain.model.SyncOutcome
 import org.neteinstein.pickaname.domain.usecase.ObserveNameCountUseCase
 import org.neteinstein.pickaname.domain.usecase.ObserveNamesUseCase
-import org.neteinstein.pickaname.domain.usecase.ObserveSearchEngineUseCase
 import org.neteinstein.pickaname.domain.usecase.RefreshNamesIfDueUseCase
 import org.neteinstein.pickaname.domain.usecase.SyncNamesUseCase
 import org.neteinstein.pickaname.fake.FakeNameRepository
@@ -260,8 +259,7 @@ class NameListViewModelTest {
                 settingsRepository = settingsRepository,
                 syncNamesUseCase = SyncNamesUseCase(syncRepository, settingsRepository, clock),
                 currentTimeMillis = clock
-            ),
-            observeSearchEngineUseCase = ObserveSearchEngineUseCase(settingsRepository)
+            )
         )
     }
 }

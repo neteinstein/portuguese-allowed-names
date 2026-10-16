@@ -13,7 +13,6 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.neteinstein.pickaname.domain.model.NamesSourceDefaults
-import org.neteinstein.pickaname.domain.model.SearchEngine
 
 class SettingsRepositoryImplTest {
 
@@ -66,43 +65,5 @@ class SettingsRepositoryImplTest {
         repository.resetSourceUrlToDefault()
 
         assertThat(repository.getSourceUrl()).isEqualTo(NamesSourceDefaults.DEFAULT_SOURCE_URL)
-    }
-
-    @Test
-    fun `observeSearchEngine defaults to the platform default when nothing is persisted yet`() = runTest {
-        val repository = newRepository()
-
-        repository.observeSearchEngine().test {
-            assertThat(awaitItem()).isEqualTo(SearchEngine.DEFAULT)
-        }
-    }
-
-    @Test
-    fun `getSearchEngine returns the default when nothing is persisted yet`() = runTest {
-        val repository = newRepository()
-
-        assertThat(repository.getSearchEngine()).isEqualTo(SearchEngine.DEFAULT)
-    }
-
-    @Test
-    fun `setSearchEngine persists the new value so subsequent reads see it`() = runTest {
-        val repository = newRepository()
-
-        repository.setSearchEngine(SearchEngine.GOOGLE)
-
-        assertThat(repository.getSearchEngine()).isEqualTo(SearchEngine.GOOGLE)
-    }
-
-    @Test
-    fun `observeSearchEngine emits the new value once it is updated`() = runTest {
-        val repository = newRepository()
-
-        repository.observeSearchEngine().test {
-            assertThat(awaitItem()).isEqualTo(SearchEngine.DEFAULT)
-
-            repository.setSearchEngine(SearchEngine.GOOGLE)
-
-            assertThat(awaitItem()).isEqualTo(SearchEngine.GOOGLE)
-        }
     }
 }

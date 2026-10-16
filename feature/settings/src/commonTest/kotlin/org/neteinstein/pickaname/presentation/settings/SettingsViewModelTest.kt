@@ -5,14 +5,11 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.neteinstein.pickaname.domain.model.NamesSourceDefaults
 import org.neteinstein.pickaname.domain.model.RefreshPeriod
-import org.neteinstein.pickaname.domain.model.SearchEngine
 import org.neteinstein.pickaname.domain.usecase.GetLastRefreshTimestampUseCase
 import org.neteinstein.pickaname.domain.usecase.GetRefreshPeriodUseCase
-import org.neteinstein.pickaname.domain.usecase.GetSearchEngineUseCase
 import org.neteinstein.pickaname.domain.usecase.GetSourceUrlUseCase
 import org.neteinstein.pickaname.domain.usecase.ResetSourceUrlUseCase
 import org.neteinstein.pickaname.domain.usecase.UpdateRefreshPeriodUseCase
-import org.neteinstein.pickaname.domain.usecase.UpdateSearchEngineUseCase
 import org.neteinstein.pickaname.domain.usecase.UpdateSourceUrlUseCase
 import org.neteinstein.pickaname.fake.FakeSettingsRepository
 import org.neteinstein.pickaname.util.MainDispatcherHarness
@@ -65,39 +62,11 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun loads_the_currently_configured_search_engine_on_init() = runTest(mainDispatcher.dispatcher) {
-        val viewModel = createViewModel(searchEngine = SearchEngine.GOOGLE)
-        runCurrent()
-
-        assertEquals(SearchEngine.GOOGLE, viewModel.uiState.value.searchEngine)
-    }
-
-    @Test
-    fun defaults_the_search_engine_to_the_platform_default_before_it_loads() = runTest(mainDispatcher.dispatcher) {
-        val viewModel = createViewModel()
-
-        assertEquals(SearchEngine.DEFAULT, viewModel.uiState.value.searchEngine)
-    }
-
-    @Test
     fun loads_the_last_refresh_timestamp_on_init() = runTest(mainDispatcher.dispatcher) {
         val viewModel = createViewModel(lastRefreshTimestamp = 1_700_000_000_000L)
         runCurrent()
 
         assertEquals(1_700_000_000_000L, viewModel.uiState.value.lastRefreshTimestamp)
-    }
-
-    @Test
-    fun selecting_a_search_engine_updates_state_immediately_and_persists_it() = runTest(mainDispatcher.dispatcher) {
-        val repository = FakeSettingsRepository(sourceUrl = currentUrl)
-        val viewModel = createViewModel(repository)
-        runCurrent()
-
-        viewModel.onSearchEngineSelected(SearchEngine.GOOGLE)
-
-        assertEquals(SearchEngine.GOOGLE, viewModel.uiState.value.searchEngine)
-        runCurrent()
-        assertEquals(SearchEngine.GOOGLE, repository.getSearchEngine())
     }
 
     @Test
@@ -180,13 +149,11 @@ class SettingsViewModelTest {
 
     private fun createViewModel(
         refreshPeriod: RefreshPeriod = RefreshPeriod.DEFAULT,
-        searchEngine: SearchEngine = SearchEngine.DEFAULT,
         lastRefreshTimestamp: Long? = null
     ): SettingsViewModel = createViewModel(
         FakeSettingsRepository(
             sourceUrl = currentUrl,
             refreshPeriod = refreshPeriod,
-            searchEngine = searchEngine,
             lastRefreshTimestamp = lastRefreshTimestamp
         )
     )
@@ -198,8 +165,6 @@ class SettingsViewModelTest {
             resetSourceUrlUseCase = ResetSourceUrlUseCase(repository),
             getRefreshPeriodUseCase = GetRefreshPeriodUseCase(repository),
             getLastRefreshTimestampUseCase = GetLastRefreshTimestampUseCase(repository),
-            updateRefreshPeriodUseCase = UpdateRefreshPeriodUseCase(repository),
-            getSearchEngineUseCase = GetSearchEngineUseCase(repository),
-            updateSearchEngineUseCase = UpdateSearchEngineUseCase(repository)
+            updateRefreshPeriodUseCase = UpdateRefreshPeriodUseCase(repository)
         )
 }

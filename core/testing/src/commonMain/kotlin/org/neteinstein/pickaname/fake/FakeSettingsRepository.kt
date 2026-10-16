@@ -5,7 +5,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.neteinstein.pickaname.domain.model.NamesSourceDefaults
 import org.neteinstein.pickaname.domain.model.RefreshPeriod
-import org.neteinstein.pickaname.domain.model.SearchEngine
 import org.neteinstein.pickaname.domain.repository.SettingsRepository
 
 /**
@@ -18,13 +17,11 @@ import org.neteinstein.pickaname.domain.repository.SettingsRepository
 class FakeSettingsRepository(
     sourceUrl: String = NamesSourceDefaults.DEFAULT_SOURCE_URL,
     refreshPeriod: RefreshPeriod = RefreshPeriod.DEFAULT,
-    searchEngine: SearchEngine = SearchEngine.DEFAULT,
     lastRefreshTimestamp: Long? = null
 ) : SettingsRepository {
 
     private val sourceUrlFlow = MutableStateFlow(sourceUrl)
     private val refreshPeriodFlow = MutableStateFlow(refreshPeriod)
-    private val searchEngineFlow = MutableStateFlow(searchEngine)
 
     /** Exposed so tests can assert on what was written without another round trip. */
     var lastRefreshTimestamp: Long? = lastRefreshTimestamp
@@ -48,14 +45,6 @@ class FakeSettingsRepository(
 
     override suspend fun setRefreshPeriod(period: RefreshPeriod) {
         refreshPeriodFlow.value = period
-    }
-
-    override fun observeSearchEngine(): Flow<SearchEngine> = searchEngineFlow.asStateFlow()
-
-    override suspend fun getSearchEngine(): SearchEngine = searchEngineFlow.value
-
-    override suspend fun setSearchEngine(engine: SearchEngine) {
-        searchEngineFlow.value = engine
     }
 
     override suspend fun getLastRefreshTimestamp(): Long? = lastRefreshTimestamp

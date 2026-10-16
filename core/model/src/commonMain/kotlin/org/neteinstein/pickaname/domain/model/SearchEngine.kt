@@ -2,14 +2,13 @@ package org.neteinstein.pickaname.domain.model
 
 import org.neteinstein.pickaname.domain.platform.PlatformCapabilities
 
-/** Which search engine to use when looking up what a name means (long-press on a name). */
+/** The search engine used to look up what a name means (tap or long-press on a name). */
 enum class SearchEngine {
     GOOGLE,
-    DUCKDUCKGO,
     BRAVE;
 
     companion object {
-        /** Used until the user picks one; differs by platform - see [PlatformCapabilities]. */
-        val DEFAULT: SearchEngine get() = PlatformCapabilities.defaultSearchEngine
+        /** Fixed per platform, not user-configurable - see [PlatformCapabilities.searchEngine]. */
+        val CURRENT: SearchEngine get() = PlatformCapabilities.searchEngine
     }
 }

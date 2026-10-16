@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.neteinstein.pickaname.domain.model.NamesSourceDefaults
 import org.neteinstein.pickaname.domain.model.RefreshPeriod
-import org.neteinstein.pickaname.domain.model.SearchEngine
 import org.neteinstein.pickaname.domain.repository.SettingsRepository
 
 /**
@@ -41,15 +40,6 @@ class SettingsRepositoryImpl(
         settings.putString(SettingsKeys.REFRESH_PERIOD, period.name)
     }
 
-    override fun observeSearchEngine(): Flow<SearchEngine> =
-        settings.getStringOrNullFlow(SettingsKeys.SEARCH_ENGINE).map { it.toSearchEngine() }
-
-    override suspend fun getSearchEngine(): SearchEngine = observeSearchEngine().first()
-
-    override suspend fun setSearchEngine(engine: SearchEngine) {
-        settings.putString(SettingsKeys.SEARCH_ENGINE, engine.name)
-    }
-
     override suspend fun getLastRefreshTimestamp(): Long? =
         settings.getLongOrNull(SettingsKeys.LAST_REFRESH_TIMESTAMP)
 
@@ -59,8 +49,5 @@ class SettingsRepositoryImpl(
 
     private fun String?.toRefreshPeriod(): RefreshPeriod =
         RefreshPeriod.entries.firstOrNull { it.name == this } ?: RefreshPeriod.DEFAULT
-
-    private fun String?.toSearchEngine(): SearchEngine =
-        SearchEngine.entries.firstOrNull { it.name == this } ?: SearchEngine.DEFAULT
 
 }

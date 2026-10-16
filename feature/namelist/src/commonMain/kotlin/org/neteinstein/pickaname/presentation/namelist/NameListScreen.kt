@@ -171,7 +171,7 @@ fun NameListScreen(
     viewModel: NameListViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val searchEngine by viewModel.searchEngine.collectAsStateWithLifecycle()
+    val searchEngine = SearchEngine.CURRENT
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val snackbarHostState = remember { SnackbarHostState() }
     val autoRefreshFailedMessage = stringResource(Res.string.name_list_auto_refresh_failed)
@@ -603,13 +603,11 @@ private fun ColumnScope.TraditionalNamesInfoBottomSheetContent(maxContentHeight:
  * read `name_meaning_search_query` with `stringResource` in composable scope - Compose
  * Multiplatform resources have no synchronous non-composable read, unlike Android's
  * `Context.getString`).
- * DuckDuckGo redirects straight to a Duck.ai chat answer (`ia=chat`) instead of plain results.
  */
 private fun buildMeaningSearchUrl(queryText: String, engine: SearchEngine): String {
     val query = queryText.encodeUrlQueryValue()
     return when (engine) {
         SearchEngine.GOOGLE -> "https://www.google.com/search?q=$query"
-        SearchEngine.DUCKDUCKGO -> "https://duckduckgo.com/?q=$query&ia=chat"
         SearchEngine.BRAVE -> "https://search.brave.com/search?q=$query"
     }
 }

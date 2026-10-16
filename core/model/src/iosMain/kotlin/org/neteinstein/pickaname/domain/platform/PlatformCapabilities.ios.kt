@@ -6,5 +6,5 @@ actual object PlatformCapabilities {
     /** Native apps download and parse the source themselves, so it is theirs to configure. */
     actual val canConfigureNamesSource: Boolean = true
 
-    actual val defaultSearchEngine: SearchEngine = SearchEngine.BRAVE
+    actual val searchEngine: SearchEngine = SearchEngine.BRAVE
 }

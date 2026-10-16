@@ -18,18 +18,15 @@
 -renamesourcefileattribute SourceFile
 
 # --- Enums persisted by name ------------------------------------------------------------------
-# SettingsRepositoryImpl writes these two to DataStore as `value.name` and reads them back by
-# matching that string against `entries`, so their constant names are part of the on-disk
-# settings format, not just an internal detail. Pinning them keeps R8's enum optimizations
+# SettingsRepositoryImpl writes this one to DataStore as `value.name` and reads it back by
+# matching that string against `entries`, so its constant names are part of the on-disk
+# settings format, not just an internal detail. Pinning it keeps R8's enum optimizations
 # (which are free to unbox an enum into an int once it looks like nothing depends on its
-# identity) from silently resetting a user's saved refresh period or search engine on upgrade.
+# identity) from silently resetting a user's saved refresh period on upgrade.
 # Gender is deliberately absent: it round-trips through explicit "F"/"M" codes (see
 # data/mapper), never through `name`, and SyncOrigin only builds a nav route within a single
 # process, so neither is name-sensitive.
 -keepclassmembers enum org.neteinstein.pickaname.domain.model.RefreshPeriod {
-    <fields>;
-}
--keepclassmembers enum org.neteinstein.pickaname.domain.model.SearchEngine {
     <fields>;
 }
 
