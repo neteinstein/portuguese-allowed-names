@@ -96,10 +96,14 @@ triggering work on each platform.
 ## Privacy
 
 The app does not collect any personal data — see [PRIVACY_POLICY.md](PRIVACY_POLICY.md) for
-details.
+details. One policy covers both the Android app and the website; it is published on the website
+at [/privacy.html](https://nomespermitidosemportugal.neteinstein.org/privacy.html). After editing
+`PRIVACY_POLICY.md`, regenerate that page with `./tools/privacy-page/generate.sh` (needs pandoc).
 
 (PT) A app não recolhe quaisquer dados pessoais — consulte
-[PRIVACY_POLICY.md](PRIVACY_POLICY.md) para mais detalhes.
+[PRIVACY_POLICY.md](PRIVACY_POLICY.md) para mais detalhes. A mesma política abrange a aplicação
+Android e o site, onde está publicada em
+[/privacy.html](https://nomespermitidosemportugal.neteinstein.org/privacy.html).
 
 ## License
 
