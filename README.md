@@ -56,7 +56,7 @@ feature/
   settings/         Settings screen + ViewModel
 composeApp/         Kotlin Multiplatform app shell (Android + wasmJs) exposing the root App()
 androidApp/         Thin Android launcher for composeApp (migration scaffold, not the released app)
-webApp/             wasmJs browser entry point for composeApp (published to GitHub Pages)
+webApp/             wasmJs browser entry point for composeApp (published to GitHub Pages and Cloudflare Pages)
 ```
 
 - **DI**: [Koin](https://insert-koin.io/)
@@ -81,8 +81,12 @@ next.
 ./gradlew :webApp:wasmJsBrowserDistribution   # build the web distribution (webApp/build/dist/wasmJs/productionExecutable)
 ```
 
-The web build is deployed to GitHub Pages by `.github/workflows/deploy-web.yml`, separately
-from the Android release pipeline (`release.yml`). It is served at
+The web build is deployed to both GitHub Pages and Cloudflare Pages by
+`.github/workflows/deploy-web.yml` while the site transitions to Cloudflare, separately
+from the Android release pipeline (`release.yml`). The Cloudflare job needs the repo secrets
+`CLOUDFLARE_API_TOKEN` (with *Cloudflare Pages: Edit*) and `CLOUDFLARE_ACCOUNT_ID`, and a
+Direct Upload Pages project named `portuguese-allowed-names` (override with the repo variable
+`CLOUDFLARE_PAGES_PROJECT`); until the secrets are set it is skipped with a warning. It is served at
 <https://nomespermitidosemportugal.neteinstein.org/>; the Android app is published at
 <https://play.google.com/store/apps/details?id=org.neteinstein.pickaname>.
 
