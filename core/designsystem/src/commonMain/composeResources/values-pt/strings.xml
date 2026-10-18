@@ -89,6 +89,11 @@
     <string name="settings_language_english">Inglês</string>
     <string name="settings_language_portuguese">Português</string>
 
+    <!-- Definições: ligação para a política de privacidade (todas as plataformas) -->
+    <string name="settings_privacy_section">Privacidade</string>
+    <string name="settings_privacy_description">Não são recolhidos dados pessoais: sem contas, sem publicidade, sem analytics.</string>
+    <string name="settings_privacy_button">Ver política de privacidade</string>
+
     <!-- Apenas na web: faixa "instale a aplicação Android" (ver InstallAppBanner) -->
     <string name="web_install_banner_title">Instale a aplicação Android</string>
     <string name="web_install_banner_message">Mais rápida, funciona offline e sincroniza a lista oficial mais recente.</string>

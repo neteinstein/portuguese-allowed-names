@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -47,6 +48,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -78,6 +80,9 @@ import org.neteinstein.pickaname.core.designsystem.resources.settings_names_list
 import org.neteinstein.pickaname.core.designsystem.resources.settings_names_list_never_updated
 import org.neteinstein.pickaname.core.designsystem.resources.settings_names_list_section
 import org.neteinstein.pickaname.core.designsystem.resources.settings_names_list_updated
+import org.neteinstein.pickaname.core.designsystem.resources.settings_privacy_button
+import org.neteinstein.pickaname.core.designsystem.resources.settings_privacy_description
+import org.neteinstein.pickaname.core.designsystem.resources.settings_privacy_section
 import org.neteinstein.pickaname.core.designsystem.resources.settings_refresh_description
 import org.neteinstein.pickaname.core.designsystem.resources.settings_refresh_period_label
 import org.neteinstein.pickaname.core.designsystem.resources.settings_refresh_section
@@ -265,6 +270,20 @@ fun SettingsScreen(
                         onSelected = viewModel::onRefreshPeriodSelected
                     )
                 }
+                }
+
+                val uriHandler = LocalUriHandler.current
+                SettingsSectionCard(
+                    icon = Icons.Filled.PrivacyTip,
+                    title = stringResource(Res.string.settings_privacy_section),
+                    description = stringResource(Res.string.settings_privacy_description)
+                ) {
+                    OutlinedButton(
+                        onClick = { uriHandler.openUri(PlatformCapabilities.privacyPolicyUrl) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(Res.string.settings_privacy_button))
+                    }
                 }
             }
         }

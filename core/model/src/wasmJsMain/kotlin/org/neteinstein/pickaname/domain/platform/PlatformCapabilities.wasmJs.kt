@@ -12,4 +12,6 @@ actual object PlatformCapabilities {
 
     /** Google: the search opens in a new browser tab here, so embedding is irrelevant. */
     actual val searchEngine: SearchEngine = SearchEngine.GOOGLE
+
+    actual val privacyPolicyUrl: String = "privacy.html"
 }

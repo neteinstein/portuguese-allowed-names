@@ -7,4 +7,6 @@ actual object PlatformCapabilities {
     actual val canConfigureNamesSource: Boolean = true
 
     actual val searchEngine: SearchEngine = SearchEngine.BRAVE
+
+    actual val privacyPolicyUrl: String = PUBLISHED_PRIVACY_POLICY_URL
 }

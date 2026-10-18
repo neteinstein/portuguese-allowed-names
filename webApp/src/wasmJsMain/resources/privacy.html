@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<!--
+    Generated from PRIVACY_POLICY.md - do not edit by hand. After changing the policy, regenerate:
+    ./tools/privacy-page/generate.sh
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy Policy · Portugal's Approved Names</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <style>
+        :root {
+            color-scheme: light dark;
+            --background: #FDFCFF;
+            --text: #1A1C1E;
+            --muted: #43474E;
+            --link: #0061A4;
+            --border: #C3C7CF;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background: #101418;
+                --text: #E2E2E6;
+                --muted: #C3C7CF;
+                --link: #9ECAFF;
+                --border: #43474E;
+            }
+        }
+        body {
+            margin: 0;
+            background-color: var(--background);
+            color: var(--text);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.6;
+        }
+        main {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 24px 16px 48px;
+            overflow-wrap: anywhere;
+        }
+        a { color: var(--link); }
+        h1 { margin-top: 2.5rem; }
+        h2 { margin-top: 2rem; }
+        hr { border: none; border-top: 1px solid var(--border); margin: 3rem 0; }
+        em { color: var(--muted); }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid var(--border); padding: 8px; text-align: left; vertical-align: top; }
+        code { font-size: 0.9em; }
+        .back { display: inline-block; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+<main>
+<a class="back" href="./">← Back to the app · Voltar à aplicação</a>
+<h1 id="privacy-policy">Privacy Policy</h1>
+<p><em>Last updated: October 18, 2026</em></p>
+<p><strong>English version below · <a href="#política-de-privacidade">Versão em português mais abaixo</a></strong></p>
+<p>"Allowed Names in Portugal" ("the App") is developed and maintained by Pedro Vicente (<a href="https://github.com/neteinstein">github.com/neteinstein</a>). This Privacy Policy covers both the Android app and the website version of the App (<a href="https://nomespermitidosemportugal.neteinstein.org/">nomespermitidosemportugal.neteinstein.org</a>), and explains what information the App accesses and how it is used. Where the two differ, this policy says so.</p>
+<h2 id="summary">Summary</h2>
+<ul>
+<li>The App does <strong>not</strong> collect, store, or transmit any personal data.</li>
+<li>The App does <strong>not</strong> use analytics, advertising, or crash-reporting SDKs.</li>
+<li>The App has <strong>no user accounts</strong> and does not require sign-in.</li>
+<li>All app data (the names list and your settings) is stored <strong>locally on your device</strong> (or, on the website, in your browser).</li>
+<li>The website sets <strong>no cookies</strong>.</li>
+</ul>
+<h2 id="what-the-app-does">What the App does</h2>
+<p>The App downloads the official "Lista de Nomes Próprios" PDF published by Portugal's <a href="https://irn.justica.gov.pt/en-gb/">Instituto dos Registos e do Notariado</a> (IRN), extracts the list of legally allowed first names, and stores it in a local database on your device so you can browse, search, and filter it.</p>
+<p>The website shows the same list. Instead of downloading the PDF itself, it loads a copy of the list that is extracted from the same IRN PDF and published alongside the website.</p>
+<h2 id="permissions">Permissions</h2>
+<p>The Android app requests:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Permission</th>
+<th>Why it's needed</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>INTERNET</code></td>
+<td>To download the names list PDF from the configured source (the IRN's published PDF by default) and to check for updates.</td>
+</tr>
+</tbody>
+</table>
+<p>The App does not request access to your contacts, location, camera, microphone, photos, or any other sensitive device permission.</p>
+<p>The website does not ask your browser for any permission (such as location, camera, microphone, or notifications).</p>
+<h2 id="information-we-collect">Information we collect</h2>
+<p>We (the developer) do not collect, receive, or have access to any information about you or your use of the App. Specifically:</p>
+<ul>
+<li><strong>No account or personal information</strong> is requested or stored.</li>
+<li><strong>No analytics, telemetry, or crash-reporting</strong> libraries are included in the App.</li>
+<li><strong>No advertising SDKs</strong> are included in the App.</li>
+<li><strong>No data is shared with or sold to third parties</strong>, because none is collected in the first place.</li>
+</ul>
+<h2 id="data-stored-on-your-device">Data stored on your device</h2>
+<p>The Android app stores the following locally, using Android's Room database and DataStore Preferences. This data stays on your device and is never sent to us:</p>
+<ul>
+<li>The parsed list of allowed names, downloaded from the configured source.</li>
+<li>Your app preferences (e.g. the configured names-source URL, automatic refresh frequency, language).</li>
+</ul>
+<p>This local data is deleted automatically when you uninstall the App. If you use Android's built-in "Back up my data" feature, this local app data may be included in your device's backup to your own Google Account, per standard Android OS behavior — we have no access to it.</p>
+<p>The website stores the following in your browser's local storage (<code>localStorage</code>). It stays in your browser and is never sent to us:</p>
+<ul>
+<li>The list of allowed names and when it was last loaded.</li>
+<li>The language you picked in Settings, if any.</li>
+<li>Whether you dismissed the "Get the Android app" banner.</li>
+</ul>
+<p>You can delete this data at any time by clearing this site's data in your browser settings.</p>
+<h2 id="network-requests">Network requests</h2>
+<p>When the App downloads or refreshes the names list, it makes a direct HTTP(S) request to the source URL configured in Settings (the IRN's published PDF, by default). We do not attach any personal identifiers to this request. If you choose to change the source URL to a different server, that server's own privacy practices and logs (e.g. standard web server access logs, which may include your IP address) are outside of our control — only point the App at a source you trust.</p>
+<p>The website is hosted on <a href="https://pages.github.com/">GitHub Pages</a>. When you visit it, your browser requests the website's files (including the names list) from GitHub's servers. As the hosting provider, GitHub may log technical information such as your IP address, as described in the <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub Privacy Statement</a>. We do not have access to those logs.</p>
+<h2 id="name-meaning-search">Name-meaning search</h2>
+<p>If you choose to look up the meaning of a name, the App opens a web search for it: on Android, a <a href="https://search.brave.com/">Brave Search</a> page (shown inside the App); on the website, a Google Search page in a new browser tab. The search contains only a question about that name (for example, "What's the meaning of the name Maria"). That search engine's own privacy policy applies to that search.</p>
+<h2 id="childrens-privacy">Children's privacy</h2>
+<p>The App does not knowingly collect personal data from anyone, including children, because it does not collect personal data at all.</p>
+<h2 id="changes-to-this-policy">Changes to this policy</h2>
+<p>We may update this Privacy Policy if the App's functionality changes (for example, if a future version adds analytics or features that require data collection). Any changes will be published in this file, with an updated "Last updated" date at the top.</p>
+<h2 id="contact-us">Contact us</h2>
+<p>Questions about this Privacy Policy? Send an email to <a href="mailto:play-store-neteinstein@googlegroups.com">play-store-neteinstein@googlegroups.com</a></p>
+<hr />
+<h1 id="política-de-privacidade">Política de Privacidade</h1>
+<p><em>Última atualização: 18 de outubro de 2026</em></p>
+<p><strong><a href="#privacy-policy">English version above</a> · Versão em português abaixo</strong></p>
+<p>A aplicação "Nomes Permitidos em Portugal" ("a App") é desenvolvida e mantida por Pedro Vicente (<a href="https://github.com/neteinstein">github.com/neteinstein</a>) como um projeto de código aberto. Esta Política de Privacidade abrange tanto a aplicação Android como a versão web da App (<a href="https://nomespermitidosemportugal.neteinstein.org/">nomespermitidosemportugal.neteinstein.org</a>), e explica que informação a App acede e como é utilizada. Quando as duas diferem, esta política indica-o.</p>
+<h2 id="resumo">Resumo</h2>
+<ul>
+<li>A App <strong>não</strong> recolhe, armazena ou transmite quaisquer dados pessoais.</li>
+<li>A App <strong>não</strong> utiliza bibliotecas de analytics, publicidade ou relatório de falhas (crash reporting).</li>
+<li>A App <strong>não tem contas de utilizador</strong> nem requer autenticação.</li>
+<li>Todos os dados da App (a lista de nomes e as suas definições) são guardados <strong>apenas no seu dispositivo</strong> (ou, no site, no seu navegador).</li>
+<li>O site <strong>não utiliza cookies</strong>.</li>
+</ul>
+<h2 id="o-que-a-app-faz">O que a App faz</h2>
+<p>A App descarrega o PDF oficial "Lista de Nomes Próprios" publicado pelo <a href="https://irn.justica.gov.pt/pt-pt/">Instituto dos Registos e do Notariado</a> (IRN), extrai a lista de nomes próprios legalmente permitidos e guarda-a numa base de dados local no seu dispositivo, para que possa consultar, procurar e filtrar essa lista.</p>
+<p>O site mostra a mesma lista. Em vez de descarregar o próprio PDF, carrega uma cópia da lista extraída do mesmo PDF do IRN e publicada juntamente com o site.</p>
+<h2 id="permissões">Permissões</h2>
+<p>A aplicação Android solicita:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Permissão</th>
+<th>Porque é necessária</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>INTERNET</code></td>
+<td>Para descarregar o PDF da lista de nomes a partir da fonte configurada (por predefinição, o PDF publicado pelo IRN) e para verificar atualizações.</td>
+</tr>
+</tbody>
+</table>
+<p>A App não solicita acesso aos seus contactos, localização, câmara, microfone, fotografias, ou qualquer outra permissão sensível do dispositivo.</p>
+<p>O site não pede ao seu navegador qualquer permissão (como localização, câmara, microfone ou notificações).</p>
+<h2 id="informação-que-recolhemos">Informação que recolhemos</h2>
+<p>Nós (o desenvolvedor) não recolhemos, recebemos, nem temos acesso a qualquer informação sobre si ou sobre a sua utilização da App. Concretamente:</p>
+<ul>
+<li><strong>Não é pedida nem guardada</strong> qualquer conta ou informação pessoal.</li>
+<li><strong>Não estão incluídas</strong> bibliotecas de analytics, telemetria ou relatório de falhas.</li>
+<li><strong>Não estão incluídos</strong> SDKs de publicidade.</li>
+<li><strong>Nenhum dado é partilhado ou vendido a terceiros</strong>, uma vez que nenhum dado é recolhido.</li>
+</ul>
+<h2 id="dados-guardados-no-seu-dispositivo">Dados guardados no seu dispositivo</h2>
+<p>A aplicação Android guarda localmente os seguintes dados, através da base de dados Room e das DataStore Preferences do Android. Estes dados permanecem no seu dispositivo e nunca nos são enviados:</p>
+<ul>
+<li>A lista de nomes permitidos, descarregada a partir da fonte configurada.</li>
+<li>As suas preferências (por exemplo, o URL da fonte de nomes configurado, a frequência de atualização automática, o idioma).</li>
+</ul>
+<p>Estes dados locais são eliminados automaticamente quando desinstala a App. Se utilizar a funcionalidade nativa do Android "Cópia de segurança dos meus dados", estes dados locais da App podem ser incluídos na cópia de segurança do seu dispositivo para a sua própria Conta Google, seguindo o comportamento padrão do sistema Android — não temos qualquer acesso a essa cópia.</p>
+<p>O site guarda os seguintes dados no armazenamento local do seu navegador (<code>localStorage</code>). Estes dados permanecem no seu navegador e nunca nos são enviados:</p>
+<ul>
+<li>A lista de nomes permitidos e a data em que foi carregada pela última vez.</li>
+<li>O idioma que escolheu nas Definições, se for o caso.</li>
+<li>Se fechou o aviso "Instale a aplicação Android".</li>
+</ul>
+<p>Pode eliminar estes dados a qualquer momento, limpando os dados deste site nas definições do seu navegador.</p>
+<h2 id="pedidos-de-rede">Pedidos de rede</h2>
+<p>Quando a App descarrega ou atualiza a lista de nomes, efetua um pedido HTTP(S) direto ao URL da fonte configurado nas Definições (por predefinição, o PDF publicado pelo IRN). Não associamos qualquer identificador pessoal a este pedido. Se optar por alterar o URL da fonte para outro servidor, as práticas de privacidade e os registos desse servidor (por exemplo, registos padrão de acesso a servidores web, que podem incluir o seu endereço IP) estão fora do nosso controlo — utilize apenas uma fonte em que confie.</p>
+<p>O site está alojado no <a href="https://pages.github.com/">GitHub Pages</a>. Quando o visita, o seu navegador pede os ficheiros do site (incluindo a lista de nomes) aos servidores do GitHub. Enquanto fornecedor de alojamento, o GitHub pode registar informação técnica, como o seu endereço IP, conforme descrito na <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">Declaração de Privacidade do GitHub</a>. Não temos acesso a esses registos.</p>
+<h2 id="pesquisa-do-significado-de-nomes">Pesquisa do significado de nomes</h2>
+<p>Se optar por pesquisar o significado de um nome, a App abre uma pesquisa na web: no Android, uma página do <a href="https://search.brave.com/">Brave Search</a> (mostrada dentro da App); no site, uma página de pesquisa do Google num novo separador do navegador. A pesquisa contém apenas uma pergunta sobre esse nome (por exemplo, "Qual é o significado do nome Maria"). Aplica-se a essa pesquisa a política de privacidade do respetivo motor de pesquisa.</p>
+<h2 id="privacidade-de-menores">Privacidade de menores</h2>
+<p>A App não recolhe, com conhecimento, dados pessoais de ninguém, incluindo crianças, uma vez que não recolhe dados pessoais de forma alguma.</p>
+<h2 id="alterações-a-esta-política">Alterações a esta política</h2>
+<p>Podemos atualizar esta Política de Privacidade caso a funcionalidade da App seja alterada (por exemplo, se uma versão futura adicionar analytics ou funcionalidades que exijam recolha de dados). Quaisquer alterações serão publicadas neste ficheiro, com a data de "Última atualização" no topo atualizada.</p>
+<h2 id="contacte-nos">Contacte-nos</h2>
+<p>Tem questões sobre esta Política de Privacidade? Envie um email para <a href="mailto:play-store-neteinstein@googlegroups.com">play-store-neteinstein@googlegroups.com</a></p>
+</main>
+</body>
+</html>

@@ -8,4 +8,6 @@ actual object PlatformCapabilities {
 
     /** Shown in the in-app bottom sheet, where Brave renders cleanly embedded. */
     actual val searchEngine: SearchEngine = SearchEngine.BRAVE
+
+    actual val privacyPolicyUrl: String = PUBLISHED_PRIVACY_POLICY_URL
 }

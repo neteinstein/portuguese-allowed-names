@@ -27,4 +27,16 @@ expect object PlatformCapabilities {
      * search engines refuse to be embedded and the search always opens in a new browser tab.
      */
     val searchEngine: SearchEngine
+
+    /**
+     * Where Settings' "privacy policy" button points: the page generated from PRIVACY_POLICY.md
+     * (tools/privacy-page) and published with the web build.
+     *
+     * Relative on web, so it opens the copy deployed next to the page being viewed; absolute
+     * everywhere else.
+     */
+    val privacyPolicyUrl: String
 }
+
+/** The published privacy policy, for the platforms that aren't the website itself. */
+const val PUBLISHED_PRIVACY_POLICY_URL = "https://nomespermitidosemportugal.neteinstein.org/privacy.html"

@@ -76,7 +76,7 @@ collection):
 
 | Declaration | Recommended answer |
 |---|---|
-| Privacy Policy URL | `https://github.com/neteinstein/portuguese-allowed-names/blob/master/PRIVACY_POLICY.md` |
+| Privacy Policy URL | `https://nomespermitidosemportugal.neteinstein.org/privacy.html` (generated from `PRIVACY_POLICY.md`; the same page the website and the app's Settings link to) |
 | App access | "All functionality is available without special access" (no login) |
 | Ads | "No, my app does not contain ads" |
 | Content rating questionnaire — category | "Reference, News, or Educational" |

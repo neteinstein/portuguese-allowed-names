@@ -89,6 +89,11 @@
     <string name="settings_language_english">English</string>
     <string name="settings_language_portuguese">Portuguese</string>
 
+    <!-- Settings: privacy policy link (all platforms) -->
+    <string name="settings_privacy_section">Privacy</string>
+    <string name="settings_privacy_description">No personal data is collected: no accounts, no ads, no analytics.</string>
+    <string name="settings_privacy_button">View privacy policy</string>
+
     <!-- Web-only: "get the Android app" banner (see InstallAppBanner) -->
     <string name="web_install_banner_title">Get the Android app</string>
     <string name="web_install_banner_message">Faster, works offline, and syncs the latest official list.</string>
