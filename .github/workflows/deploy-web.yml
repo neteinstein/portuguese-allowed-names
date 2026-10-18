@@ -1,7 +1,9 @@
 name: Deploy Web
 
 # Builds the wasmJs (Compose Multiplatform for Web) distribution and publishes it to GitHub
-# Pages. Kept entirely separate from release.yml (Android/Play Store): different trigger,
+# Pages and Cloudflare Pages. Both hosts are deployed from the same build while the site
+# transitions from GitHub Pages to Cloudflare; once the custom domain points at Cloudflare,
+# the GitHub Pages job (and its permissions/artifact) can be removed. Kept entirely separate from release.yml (Android/Play Store): different trigger,
 # different job, no shared state - a broken web build can never block an Android release.
 #
 # Only deploys on push to `main` - the live Pages site should always reflect the last stable,
@@ -65,6 +67,16 @@ jobs:
         with:
           path: webApp/build/dist/wasmJs/productionExecutable
 
+      # upload-pages-artifact produces a tarball only deploy-pages understands, so the same
+      # files are also uploaded as a plain artifact for the Cloudflare job.
+      - name: Upload distribution for Cloudflare Pages
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: web-dist
+          path: webApp/build/dist/wasmJs/productionExecutable
+          retention-days: 1
+          if-no-files-found: error
+
   deploy:
     name: Deploy to GitHub Pages
     needs: build
@@ -79,3 +91,51 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  deploy-cloudflare:
+    name: Deploy to Cloudflare Pages
+    # Depends only on build, never on the GitHub Pages job: a failure on either host must not
+    # stop the other from getting the new build during the transition.
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: cloudflare-pages
+      url: ${{ steps.deployment.outputs.deployment-url }}
+    env:
+      # Repo secrets CLOUDFLARE_API_TOKEN (token with "Cloudflare Pages: Edit" permission) and
+      # CLOUDFLARE_ACCOUNT_ID. The Pages project must exist as a Direct Upload project; its name
+      # defaults to portuguese-allowed-names and can be overridden with the repo variable
+      # CLOUDFLARE_PAGES_PROJECT.
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      PROJECT_NAME: ${{ vars.CLOUDFLARE_PAGES_PROJECT || 'portuguese-allowed-names' }}
+    steps:
+      # Skips (with a warning) instead of failing until the secrets are configured, so the
+      # workflow stays green for GitHub Pages in the meantime.
+      - name: Check Cloudflare credentials
+        id: credentials
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set - skipping Cloudflare Pages deploy."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download distribution
+        if: steps.credentials.outputs.configured == 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: web-dist
+          path: dist
+
+      # --branch is the ref that was built: on main this is a production deploy; a
+      # workflow_dispatch from another branch becomes a Cloudflare preview deployment instead.
+      - name: Deploy to Cloudflare Pages
+        id: deployment
+        if: steps.credentials.outputs.configured == 'true'
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ env.PROJECT_NAME }} --branch=${{ github.ref_name }} --commit-hash=${{ github.sha }}
